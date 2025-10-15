@@ -7,6 +7,17 @@
 .buildlog/
 .history
 
+**/node_modules/**
+
+.DS_Store
+.vscode/*
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+vite.config.js.timestamp-*
+.pnpm-store
+.devcontainer/library
+.devcontainer/.env*
 
 
 # Flutter repo-specific
