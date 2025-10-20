@@ -1,5 +1,6 @@
-package com.charles.seek.model;
+package com.charles.seek.model.gear;
 
+import com.charles.seek.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;

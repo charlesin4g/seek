@@ -1,5 +1,6 @@
-package com.charles.seek.model;
+package com.charles.seek.model.user;
 
+import com.charles.seek.model.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
