@@ -4,17 +4,19 @@ import com.charles.seek.model.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @EqualsAndHashCode(callSuper = true)
 @Data
 @Entity
 @Table(name = "gear")
-public class Gear extends BaseEntity {
+public class GearModel extends BaseEntity {
     /**
      * 名称
      */
@@ -64,8 +66,8 @@ public class Gear extends BaseEntity {
      * 购买/办理日期
      */
     @PastOrPresent(message = "购买日期不能是未来日期")
-    @Column(name = "purchase_date", columnDefinition = "DATE DEFAULT CURRENT_DATE")
-    private LocalDate purchaseDate;
+    @Column(name = "purchase_date")
+    private LocalDateTime purchaseDate;
     /**
      * 价格
      */
@@ -92,11 +94,20 @@ public class Gear extends BaseEntity {
     /**
      * 构造函数 - 设置默认值
      */
-    public Gear() {
+    public GearModel() {
         this.weight = 0.00;
-        this.purchaseDate = LocalDate.now();
+        this.purchaseDate = LocalDateTime.now();
         this.price = 0.00;
         this.essential = true;
         this.quantity = 1;
     }
+
+    @Transient
+    public String getSimplePurchaseDate() {
+        if (purchaseDate == null) {
+            return null;
+        }
+        return purchaseDate.format(DateTimeFormatter.ofPattern("yy-MM"));
+    }
+
 }

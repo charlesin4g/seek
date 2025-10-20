@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/ticket")
+@RequestMapping("/api/trail")
 @RequiredArgsConstructor
-@Tag(name = "票据管理", description = "票据相关操作")
-public class TicketController {
+@Tag(name = "轨迹管理", description = "轨迹相关操作")
+public class TrailController {
 }

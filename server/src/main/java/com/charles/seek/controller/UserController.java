@@ -16,7 +16,7 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/login")
-    public ResponseEntity<UserProfile> login(@RequestParam String username, @RequestParam String password) {
+    public ResponseEntity<UserProfile> login(@RequestParam(name = "username") String username, @RequestParam(name = "password") String password) {
         boolean check = userService.checkPassword(username, password);
         if (check) {
             return ResponseEntity.ok(userService.getByUsername(username));

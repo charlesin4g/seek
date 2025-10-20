@@ -8,6 +8,8 @@ class CustomFormField extends StatelessWidget {
   final TextInputType keyboardType;
   final int labelFlex;
   final int fieldFlex;
+  final ValueChanged<String>? onChanged;
+  final FocusNode? focusNode;
 
   const CustomFormField({
     super.key,
@@ -18,6 +20,8 @@ class CustomFormField extends StatelessWidget {
     this.keyboardType = TextInputType.text,
     this.labelFlex = 2,
     this.fieldFlex = 3,
+    this.onChanged,
+    this.focusNode,
   });
 
   @override
@@ -39,6 +43,8 @@ class CustomFormField extends StatelessWidget {
           child: TextFormField(
             controller: controller,
             keyboardType: keyboardType,
+            focusNode: focusNode,
+            onChanged: onChanged,
             decoration: InputDecoration(
               hintText: hintText,
               hintStyle: TextStyle(color: Colors.grey.shade400),

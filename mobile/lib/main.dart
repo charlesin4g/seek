@@ -1,10 +1,29 @@
 import 'package:flutter/material.dart';
-import 'pages/gear_page.dart';
+import 'pages/gear/gear_page.dart';
 import 'pages/login_page.dart';
+import 'pages/ticket/ticket_page.dart';
 import 'widgets/tab_scaffold.dart';
 import 'services/auth_service.dart';
 
 void main() {
+  // 初始化绑定，确保可以设置错误处理器
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 捕获 Flutter 框架错误（包括构建/布局/绘制阶段产生的错误）并打印到控制台
+  FlutterError.onError = (FlutterErrorDetails details) {
+    FlutterError.dumpErrorToConsole(details);
+    if (details.stack != null) {
+      debugPrintStack(stackTrace: details.stack);
+    }
+  };
+
+  // 捕获异步未处理错误（Future、微任务等）并打印到控制台
+  WidgetsBinding.instance.platformDispatcher.onError = (Object error, StackTrace stack) {
+    debugPrint('Uncaught async error: $error');
+    debugPrintStack(stackTrace: stack);
+    return true; // 标记已处理，避免重复上报
+  };
+
   runApp(const MyApp());
 }
 
@@ -58,7 +77,7 @@ class _HomeTabsState extends State<HomeTabs> {
 
   late final List<Widget> _pages = <Widget>[
     const TabScaffold(title: 'Home', icon: Icons.home),
-    const TabScaffold(title: 'Explore', icon: Icons.explore),
+    const TicketPage(),
     const GearPage(),
     const TabScaffold(title: 'Messages', icon: Icons.message),
     const TabScaffold(title: 'Profile', icon: Icons.person),
@@ -79,7 +98,7 @@ class _HomeTabsState extends State<HomeTabs> {
         },
         destinations: const <NavigationDestination>[
           NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.explore_outlined), selectedIcon: Icon(Icons.explore), label: 'Explore'),
+          NavigationDestination(icon: Icon(Icons.confirmation_number_outlined), selectedIcon: Icon(Icons.confirmation_number), label: 'Tickets'),
           NavigationDestination(icon: Icon(Icons.sports_outlined), selectedIcon: Icon(Icons.sports), label: 'Gear'),
           NavigationDestination(icon: Icon(Icons.message_outlined), selectedIcon: Icon(Icons.message), label: 'Messages'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),

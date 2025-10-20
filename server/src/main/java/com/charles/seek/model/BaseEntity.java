@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 import org.hibernate.annotations.Comment;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @MappedSuperclass
 @Data
@@ -19,14 +19,14 @@ public class BaseEntity {
     /**
      * 创建时间
      */
-    @Column(name = "created_at", updatable = false, columnDefinition = "DATE default CURRENT_DATE")
-    private LocalDate createdAt;
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
 
     /**
      * 更新时间
      */
-    @Column(name = "updatedAt", columnDefinition = "DATE default CURRENT_DATE")
-    private LocalDate updatedAt;
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
     /**
      * 状态（0:禁用, 1:启用）
@@ -43,12 +43,12 @@ public class BaseEntity {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDate.now();
-        updatedAt = LocalDate.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDate.now();
+        updatedAt = LocalDateTime.now();
     }
 }

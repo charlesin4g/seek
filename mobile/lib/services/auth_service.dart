@@ -17,12 +17,9 @@ class AuthService {
     if (username.isEmpty || password.isEmpty) return false;
 
     try {
-      // Call backend login API
       final result = await UserApi().login(username, password);
-
-      // Persist returned data
       await StorageService().cacheUser(result);
-
+    
       _isLoggedIn = true;
       _currentUser = username;
       return true;

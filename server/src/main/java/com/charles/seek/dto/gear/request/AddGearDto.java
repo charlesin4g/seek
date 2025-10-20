@@ -1,12 +1,11 @@
 package com.charles.seek.dto.gear.request;
 
-import com.charles.seek.constant.SizeEnum;
 import lombok.Data;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
-public class addGear {
+public class AddGearDto {
     private String name;
     private String description;
     private String category;
@@ -14,8 +13,9 @@ public class addGear {
     private String color;
     private String size;
     private double weight;
-    private LocalDate purchaseDate;
+    private LocalDateTime purchaseDate;
     private double price;
     private boolean essential = true;
     private int quantity;
+    private Long owner;
 }

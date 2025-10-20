@@ -1,45 +1,86 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'package:flutter/material.dart';
-import '../models/gear.dart';
-import '../widgets/section_card.dart';
-import '../widgets/form_field.dart';
-import '../widgets/selector_field.dart';
+import '../../models/gear.dart';
+import '../../widgets/section_card.dart';
+import '../../widgets/form_field.dart';
+import '../../widgets/selector_field.dart';
+import '../../services/gear_api.dart';
 
-class EquipmentEditPage extends StatefulWidget {
-  final Gear gear;
-
-  const EquipmentEditPage({
-    super.key,
-    required this.gear,
-  });
+class AddEquipmentPage extends StatefulWidget {
+  const AddEquipmentPage({super.key});
 
   @override
-  State<EquipmentEditPage> createState() => _EquipmentEditPageState();
+  State<AddEquipmentPage> createState() => _AddEquipmentPageState();
 }
 
-class _EquipmentEditPageState extends State<EquipmentEditPage> {
+class _AddEquipmentPageState extends State<AddEquipmentPage> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _weightController;
-  late TextEditingController _priceController;
+  final _nameController = TextEditingController();
+  final _weightController = TextEditingController();
+  final _priceController = TextEditingController();
   
-  late String _selectedCategory;
-  late String _selectedBrand;
-  late String _selectedWeightUnit;
-  late int _quantity;
-  late DateTime _selectedDate;
+  String _selectedCategory = '';
+  String _selectedBrand = '';
+  String _selectedWeightUnit = 'g';
+  int _quantity = 1;
+  DateTime _selectedDate = DateTime(2025, 10, 15);
+  
+  List<Brand> _brands = [];
+  List<String> _categories = [];
+  Map<String, String> _categoryDict = {};
+  bool _isLoadingBrands = false;
+  bool _isLoadingCategories = false;
+  final GearApi _gearApi = GearApi();
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.gear.name);
-    _weightController = TextEditingController(text: widget.gear.weight.toString());
-    _priceController = TextEditingController(text: widget.gear.price.toString());
+    _fetchBrands();
+    _fetchCategories();
+  }
+  
+  Future<void> _fetchBrands() async {
+    setState(() {
+      _isLoadingBrands = true;
+    });
     
-    _selectedCategory = widget.gear.category;
-    _selectedBrand = widget.gear.brand;
-    _selectedWeightUnit = widget.gear.weightUnit;
-    _quantity = widget.gear.quantity;
-    _selectedDate = widget.gear.purchaseDate;
+    try {
+      final brandsData = await _gearApi.getBrands();
+      setState(() {
+        _brands = brandsData.map((data) => Brand.fromJson(data)).toList();
+        _isLoadingBrands = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingBrands = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('获取品牌数据失败: $e')),
+      );
+    }
+  }
+  
+  Future<void> _fetchCategories() async {
+    setState(() {
+      _isLoadingCategories = true;
+    });
+    
+    try {
+      final categoryDict = await _gearApi.getCategoryDict();
+      setState(() {
+        _categoryDict = categoryDict;
+        _categories = categoryDict.keys.toList();
+        _isLoadingCategories = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingCategories = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('获取类别数据失败: $e')),
+      );
+    }
   }
 
   @override
@@ -68,7 +109,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
           ),
         ),
         title: const Text(
-          '编辑装备',
+          '添加新装备',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -82,9 +123,8 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
             child: const Text(
               '保存',
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.grey,
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -107,7 +147,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                   const SizedBox(height: 16),
                   SelectorField(
                     label: '所属类别',
-                    value: _selectedCategory,
+                    value: _categoryDict[_selectedCategory] ?? _selectedCategory,
                     onTap: _showCategoryPicker,
                   ),
                   const SizedBox(height: 16),
@@ -341,24 +381,37 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
   void _showCategoryPicker() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: GearCategory.categories.map((category) {
-            return ListTile(
-              title: Text(category),
-              onTap: () {
-                setState(() {
-                  _selectedCategory = category;
-                });
-                Navigator.pop(context);
-              },
-              trailing: _selectedCategory == category
-                  ? const Icon(Icons.check, color: Colors.blue)
-                  : null,
-            );
-          }).toList(),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _isLoadingCategories
+                ? const Center(child: CircularProgressIndicator())
+                : (_categories.isEmpty
+                    ? const Center(child: Text('没有可用的类别数据'))
+                    : ListView.separated(
+                        itemCount: _categories.length,
+                        separatorBuilder: (_, __) => const Divider(height: 0),
+                        itemBuilder: (_, index) {
+                          final code = _categories[index];
+                          final name = _categoryDict[code] ?? code;
+                          return ListTile(
+                            title: Text(name),
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = code;
+                              });
+                              Navigator.pop(context);
+                            },
+                            trailing: _selectedCategory == code
+                                ? const Icon(Icons.check, color: Colors.blue)
+                                : null,
+                          );
+                        },
+                      ))
+          ),
         ),
       ),
     );
@@ -367,24 +420,36 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
   void _showBrandPicker() {
     showModalBottomSheet(
       context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: GearBrand.brands.map((brand) {
-            return ListTile(
-              title: Text(brand),
-              onTap: () {
-                setState(() {
-                  _selectedBrand = brand;
-                });
-                Navigator.pop(context);
-              },
-              trailing: _selectedBrand == brand
-                  ? const Icon(Icons.check, color: Colors.blue)
-                  : null,
-            );
-          }).toList(),
+      isScrollControlled: true,
+      builder: (context) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.6,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: _isLoadingBrands
+                ? const Center(child: CircularProgressIndicator())
+                : (_brands.isEmpty
+                    ? const Center(child: Text('没有可用的品牌数据'))
+                    : ListView.separated(
+                        itemCount: _brands.length,
+                        separatorBuilder: (_, __) => const Divider(height: 0),
+                        itemBuilder: (_, index) {
+                          final brand = _brands[index];
+                          return ListTile(
+                            title: Text(brand.displayName),
+                            onTap: () {
+                              setState(() {
+                                _selectedBrand = brand.displayName;
+                              });
+                              Navigator.pop(context);
+                            },
+                            trailing: _selectedBrand == brand.displayName
+                                ? const Icon(Icons.check, color: Colors.blue)
+                                : null,
+                          );
+                        },
+                      ))
+          ),
         ),
       ),
     );
@@ -404,17 +469,85 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
     }
   }
 
-  void _saveEquipment() {
+  Future<void> _saveEquipment() async {
     if (_formKey.currentState!.validate()) {
-      // Here you would typically save the updated equipment data
-      // For now, just show a success message and go back
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('装备更新成功！'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
+      try {
+        // 显示加载指示器
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          },
+        );
+        
+        // 准备装备数据
+        final weight = double.tryParse(_weightController.text) ?? 0;
+        final price = double.tryParse(_priceController.text) ?? 0;
+        
+        // 根据重量单位转换为克
+        double weightInGrams = weight;
+        if (_selectedWeightUnit == 'kg') {
+          weightInGrams = weight * 1000;
+        } else if (_selectedWeightUnit == '斤') {
+          weightInGrams = weight * 500;
+        }
+        
+        // 从API获取的品牌列表中查找对应的英文名称
+        String brandCode = 'Other';
+        final selectedBrandObj = _brands.firstWhere(
+          (brand) => brand.displayName == _selectedBrand,
+          orElse: () => const Brand(name: 'Other', displayName: '其他'),
+        );
+        brandCode = selectedBrandObj.name;
+        
+        // 创建API请求数据
+        final gearData = {
+          'name': _nameController.text,
+          'description': '',
+          'category': _selectedCategory,
+          'brand': brandCode,
+          'color': '',  // 默认值，可以在表单中添加颜色选择
+          'size': '',     // 默认值，可以在表单中添加尺寸选择
+          'weight': weightInGrams.toInt(),
+          'purchaseDate': _selectedDate.toIso8601String(),
+          'price': price,
+          'essential': true,  // 默认值，可以在表单中添加是否必需选择
+          'quantity': _quantity,
+          'owner': 1  // 默认用户ID，实际应用中应该从用户会话中获取
+        };
+        
+        // 调用API保存装备数据
+        final gearApi = GearApi();
+        await gearApi.addGear(gearData);
+        
+        // 关闭加载指示器
+        Navigator.pop(context);
+        
+        // 显示成功消息
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('装备添加成功！'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // 返回上一页并通知上层刷新
+        Navigator.pop(context, true);
+      } catch (e) {
+        // 关闭加载指示器
+        Navigator.pop(context);
+        
+        // 显示错误消息
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('保存失败: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

@@ -74,24 +74,25 @@ class Gear {
   }
 }
 
-class GearCategory {
-  static const List<String> categories = [
-    '背负',
-    '睡眠',
-    '服装',
-    '鞋类',
-    '其他',
-  ];
+class GearBrand {
+  static const List<String> brands = [];
 }
 
-class GearBrand {
-  static const List<String> brands = [
-    '神秘农场',
-    '牧高笛',
-    '始祖鸟',
-    '北面',
-    '其他',
-  ];
+class Brand {
+  final String name;
+  final String displayName;
+  
+  const Brand({
+    required this.name,
+    required this.displayName,
+  });
+  
+  factory Brand.fromJson(Map<String, dynamic> json) {
+    return Brand(
+      name: json['name'] as String,
+      displayName: json['displayName'] as String,
+    );
+  }
 }
 
 class WeightUnit {

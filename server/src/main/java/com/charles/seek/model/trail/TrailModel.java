@@ -1,4 +1,89 @@
 package com.charles.seek.model.trail;
 
-public class TrailModel {
+import com.charles.seek.model.BaseEntity;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.hibernate.annotations.Comment;
+
+import java.time.LocalDateTime;
+
+@EqualsAndHashCode(callSuper = true)
+@Data
+@Entity
+@Table(name = "trail",
+        indexes = {
+                @Index(name = "idx_trail_owner", columnList = "owner"),
+                @Index(name = "idx_trail_start_time", columnList = "start_time")
+        })
+public class TrailModel extends BaseEntity {
+
+    @NotBlank
+    @Size(max = 100)
+    @Column(name = "title", length = 100, nullable = false)
+    @Comment("轨迹标题")
+    private String title;
+
+    @Size(max = 1000)
+    @Column(name = "description", length = 1000)
+    @Comment("轨迹描述")
+    private String description;
+
+    @Size(max = 20)
+    @Column(name = "type", length = 20)
+    @Comment("轨迹类型: Hike/Run/Bike 等")
+    private String type;
+
+    @Column(name = "start_time")
+    @Comment("开始时间")
+    private LocalDateTime startTime;
+
+    @Column(name = "end_time")
+    @Comment("结束时间")
+    private LocalDateTime endTime;
+
+    @PositiveOrZero
+    @Digits(integer = 12, fraction = 2)
+    @Column(name = "distance", columnDefinition = "NUMERIC(12,2) DEFAULT 0.00")
+    @Comment("总距离(米)")
+    private double distance;
+
+    @PositiveOrZero
+    @Column(name = "duration_sec", columnDefinition = "INTEGER DEFAULT 0")
+    @Comment("总时长(秒)")
+    private int durationSec;
+
+    @PositiveOrZero
+    @Digits(integer = 6, fraction = 2)
+    @Column(name = "avg_speed", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    @Comment("平均速度(m/s)")
+    private double avgSpeed;
+
+    @PositiveOrZero
+    @Digits(integer = 6, fraction = 2)
+    @Column(name = "elevation_gain", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    @Comment("累计爬升(米)")
+    private double elevationGain;
+
+    @Column(name = "min_lat", columnDefinition = "NUMERIC(9,6)")
+    @Comment("最小纬度")
+    private Double minLat;
+
+    @Column(name = "min_lon", columnDefinition = "NUMERIC(9,6)")
+    @Comment("最小经度")
+    private Double minLon;
+
+    @Column(name = "max_lat", columnDefinition = "NUMERIC(9,6)")
+    @Comment("最大纬度")
+    private Double maxLat;
+
+    @Column(name = "max_lon", columnDefinition = "NUMERIC(9,6)")
+    @Comment("最大经度")
+    private Double maxLon;
+
+    @Size(max = 50)
+    @Column(name = "owner", length = 50)
+    @Comment("所属用户：用户名")
+    private String owner;
 }

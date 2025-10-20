@@ -1,10 +1,10 @@
 package com.charles.seek.serviceImpl;
 
-import com.charles.seek.dto.user.mapper.UserMapper;
 import com.charles.seek.dto.user.response.UserProfile;
 import com.charles.seek.repository.UserRepository;
 import com.charles.seek.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final UserMapper userMapper;
+    private final ModelMapper mapper;
 
     /**
      * 验证密码
@@ -32,6 +32,6 @@ public class UserServiceImpl implements UserService {
         var user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("用户不存在: " + username));
 
-        return userMapper.toUserProfile(user);
+        return mapper.map(user, UserProfile.class);
     }
 }

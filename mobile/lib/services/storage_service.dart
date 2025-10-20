@@ -6,7 +6,7 @@ class StorageService {
   factory StorageService() => _instance;
   StorageService._internal();
 
-  static const String UserKey = 'user_key';
+  static const String userKey = 'user_key';
 
   Future<void> setString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
@@ -34,10 +34,10 @@ class StorageService {
 
   // Convenience helpers for admin user
   Future<void> cacheUser(Map<String, dynamic> user) async {
-    await setJson(UserKey, user);
+    await setJson(userKey, user);
   }
 
   Future<Map<String, dynamic>?> getCachedAdminUser() async {
-    return getJson(UserKey);
+    return getJson(userKey);
   }
 }

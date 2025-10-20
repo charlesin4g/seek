@@ -1,4 +1,5 @@
 import 'http_client.dart';
+import 'dart:convert';
 
 class ApiClient {
   static final ApiClient _instance = ApiClient._internal();
@@ -9,6 +10,7 @@ class ApiClient {
 
   // Kept for backward compatibility; prefer using UserApi directly.
   Future<Map<String, dynamic>> getUserByUsername(String username) async {
-    return _http.getJson('/api/user/$username');
+    final raw = await _http.getJson('/api/user/$username');
+    return Map<String, dynamic>.from(jsonDecode(raw) as Map);
   }
 }

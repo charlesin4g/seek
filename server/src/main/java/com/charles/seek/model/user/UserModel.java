@@ -26,7 +26,7 @@ import org.hibernate.annotations.Comment;
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_user_username", columnNames = "username")
         })
-public class User extends BaseEntity {
+public class UserModel extends BaseEntity {
     /**
      * 用户名 - 登录账号
      * 系统唯一，用于用户登录和身份识别

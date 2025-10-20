@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
-public enum SizeEnum {
+public enum GearSizeEnum {
     // 国际通用尺码
     XS("XS", "超小号", "Extra Small"),
     S("S", "小号", "Small"),
@@ -28,7 +28,7 @@ public enum SizeEnum {
     // 英文描述
     private final String englishName;
 
-    SizeEnum(String code, String chineseName, String englishName) {
+    GearSizeEnum(String code, String chineseName, String englishName) {
         this.code = code;
         this.chineseName = chineseName;
         this.englishName = englishName;
@@ -40,7 +40,7 @@ public enum SizeEnum {
      */
     public static List<String> getSizeCodes() {
         return Arrays.stream(values())
-                .map(SizeEnum::getCode)
+                .map(GearSizeEnum::getCode)
                 .collect(Collectors.toList());
     }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import '../services/env.dart';
 import '../widgets/section_card.dart';
 import '../widgets/form_field.dart';
 // Import the main app widget
@@ -14,12 +15,21 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _usernameController = TextEditingController(
+    text: Env.useTestDefaultLogin ? 'admin' : '',
+  );
+  final _passwordController = TextEditingController(
+    text: Env.useTestDefaultLogin ? 'seek' : '',
+  );
   final _authService = AuthService();
   
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
