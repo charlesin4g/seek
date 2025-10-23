@@ -39,10 +39,14 @@ dependencies {
 
     // 类型转换
 
-    implementation 'org.modelmapper:modelmapper:3.1.1'
+
     implementation 'org.mapstruct:mapstruct:1.5.5.Final'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
     annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+
+    // CSV 解析
+    implementation 'org.apache.commons:commons-csv:1.10.0'
+    implementation 'org.modelmapper:modelmapper:3.2.0'
 }
 
 group = 'com.charles'

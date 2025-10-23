@@ -1,11 +1,11 @@
 package com.charles.seek.serviceImpl;
 
 import com.charles.seek.constant.GearCategoryEnum;
-import com.charles.seek.dto.gear.request.AddGearDto;
-import com.charles.seek.dto.gear.request.EditGearDto;
-import com.charles.seek.dto.gear.response.BrandDto;
-import com.charles.seek.dto.gear.response.CategoryDto;
-import com.charles.seek.dto.gear.response.QueryGearListDto;
+import com.charles.seek.dto.gear.request.AddGearRequest;
+import com.charles.seek.dto.gear.request.EditGearRequest;
+import com.charles.seek.dto.gear.response.BrandResponse;
+import com.charles.seek.dto.gear.response.CategoryResponse;
+import com.charles.seek.dto.gear.response.QueryGearListResponse;
 import com.charles.seek.model.gear.GearModel;
 import com.charles.seek.repository.BrandRepository;
 import com.charles.seek.repository.GearRepository;
@@ -31,20 +31,20 @@ public class GearServiceImpl implements GearService {
      * 获取所有品牌列表
      */
     @Override
-    public List<BrandDto> getAllBrands() {
+    public List<BrandResponse> getAllBrands() {
         var brands = brandRepository.findAll(Sort.by(Sort.Direction.ASC, "sequence"));
-        return brands.stream().map(b -> mapper.map(b, BrandDto.class)).collect(Collectors.toList());
+        return brands.stream().map(b -> mapper.map(b, BrandResponse.class)).collect(Collectors.toList());
     }
 
     /**
      * 获取我的装备
      */
     @Override
-    public List<QueryGearListDto> getMyGears(String owner) {
+    public List<QueryGearListResponse> getMyGears(String owner) {
         var gears = gearRepository.findByOwner(owner);
         return gears.stream()
                 .map(g -> {
-                    var dto = mapper.map(g, QueryGearListDto.class);
+                    var dto = mapper.map(g, QueryGearListResponse.class);
                     dto.setName(g.getName());
                     dto.setPurchaseDate(g.getSimplePurchaseDate());
                     return dto;
@@ -56,7 +56,7 @@ public class GearServiceImpl implements GearService {
      * 新增装备
      */
     @Override
-    public List<QueryGearListDto> addGear(AddGearDto gear) {
+    public List<QueryGearListResponse> addGear(AddGearRequest gear) {
         var newGear = mapper.map(gear, GearModel.class);
         var result = gearRepository.save(newGear);
         if (result.getId() != null) {
@@ -66,7 +66,7 @@ public class GearServiceImpl implements GearService {
     }
 
     @Override
-    public List<QueryGearListDto> editGear(Long gearId, EditGearDto gear) {
+    public List<QueryGearListResponse> editGear(Long gearId, EditGearRequest gear) {
         var model = gearRepository.findById(gearId)
                 .orElseThrow(() -> new RuntimeException("装备不存在: " + gear.getName()));
         mapper.map(gear, model);
@@ -75,9 +75,9 @@ public class GearServiceImpl implements GearService {
     }
 
     @Override
-    public List<CategoryDto> getCategories() {
+    public List<CategoryResponse> getCategories() {
         return Arrays.stream(GearCategoryEnum.values())
-                .map(enumValue -> new CategoryDto(enumValue.getCode(), enumValue.getName()))
+                .map(enumValue -> new CategoryResponse(enumValue.getCode(), enumValue.getName()))
                 .collect(Collectors.toList());
     }
 }

@@ -1,6 +1,6 @@
 package com.charles.seek.config;
 
-import com.charles.seek.dto.gear.request.AddGearDto;
+import com.charles.seek.dto.gear.request.AddGearRequest;
 import com.charles.seek.model.gear.GearModel;
 import org.modelmapper.ModelMapper;
 import org.modelmapper.PropertyMap;
@@ -16,7 +16,7 @@ public class CustomModelMapperConfig {
     }
 
     private void configureMappings() {
-        modelMapper.addMappings(new PropertyMap<AddGearDto, GearModel>() {
+        modelMapper.addMappings(new PropertyMap<AddGearRequest, GearModel>() {
             @Override
             protected void configure() {
                 map().setName(source.getName());

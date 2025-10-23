@@ -1,6 +1,7 @@
 package com.charles.seek.model.trail;
 
 import com.charles.seek.model.BaseEntity;
+import com.charles.seek.model.activity.ActivityModel;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.Data;
@@ -15,7 +16,8 @@ import java.time.LocalDateTime;
 @Table(name = "trail",
         indexes = {
                 @Index(name = "idx_trail_owner", columnList = "owner"),
-                @Index(name = "idx_trail_start_time", columnList = "start_time")
+                @Index(name = "idx_trail_start_time", columnList = "start_time"),
+                @Index(name = "idx_trail_activity_id", columnList = "activity_id")
         })
 public class TrailModel extends BaseEntity {
 
@@ -86,4 +88,9 @@ public class TrailModel extends BaseEntity {
     @Column(name = "owner", length = 50)
     @Comment("所属用户：用户名")
     private String owner;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "activity_id", foreignKey = @ForeignKey(name = "fk_trail_activity"))
+    @Comment("关联活动")
+    private ActivityModel activity;
 }

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'pages/gear/gear_page.dart';
 import 'pages/login_page.dart';
 import 'pages/ticket/ticket_page.dart';
+import 'pages/user/profile_page.dart';
 import 'widgets/tab_scaffold.dart';
 import 'services/auth_service.dart';
+import 'services/user_api.dart';
+import 'services/env.dart';
 
 void main() {
   // 初始化绑定，确保可以设置错误处理器
@@ -41,24 +44,62 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class AuthWrapper extends StatelessWidget {
+class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
+
+  @override
+  State<AuthWrapper> createState() => _AuthWrapperState();
+}
+
+class _AuthWrapperState extends State<AuthWrapper> {
+  Future<void>? _bootstrapFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    // Debug 模式下，自动获取用户信息并缓存，跳过登录页
+    if (Env.useTestDefaultLogin) {
+      _bootstrapFuture = _bootstrapDebugUser();
+    }
+  }
+
+  Future<void> _bootstrapDebugUser() async {
+    try {
+      // 默认使用 admin 作为测试用户
+      final user = await UserApi().getUserByUsername('admin');
+      await AuthService().bootstrapWithUser(user);
+    } catch (e) {
+      // 失败则保持未登录状态，回退到登录页
+      debugPrint('Debug bootstrap user failed: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final authService = AuthService();
-    
-    if (authService.isLoggedIn) {
-      return const MainApp();
-    } else {
-      return const LoginPage();
+
+    if (!Env.useTestDefaultLogin) {
+      // 正常模式：根据登录状态选择页面
+      return authService.isLoggedIn ? const MainApp() : const LoginPage();
     }
+
+    // Debug 模式：用 FutureBuilder 等待一次性引导，完成后进入主界面
+    return FutureBuilder<void>(
+      future: _bootstrapFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return const MainApp();
+      },
+    );
   }
 }
 
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
-  
   @override
   Widget build(BuildContext context) {
     return const HomeTabs();
@@ -80,7 +121,7 @@ class _HomeTabsState extends State<HomeTabs> {
     const TicketPage(),
     const GearPage(),
     const TabScaffold(title: 'Messages', icon: Icons.message),
-    const TabScaffold(title: 'Profile', icon: Icons.person),
+    const UserProfilePage(),
   ];
 
   @override

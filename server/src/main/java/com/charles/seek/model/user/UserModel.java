@@ -79,4 +79,13 @@ public class UserModel extends BaseEntity {
     @Column(name = "sex", nullable = false, columnDefinition = "int default 0")
     @Comment("性别：0-未知 1-男 2-女")
     private int sex;
+
+    /**
+     * 个人签名
+     * 用户个人签名，用于个人资料展示
+     */
+    @Size(max = 200, message = "个人签名长度不能超过200个字符")
+    @Column(name = "signature", length = 200)
+    @Comment("个人签名")
+    private String signature;
 }

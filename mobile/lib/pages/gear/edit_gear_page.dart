@@ -113,16 +113,6 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            '取消',
-            style: TextStyle(
-              color: Colors.blue,
-              fontSize: 16,
-            ),
-          ),
-        ),
         title: const Text(
           '编辑装备',
           style: TextStyle(
@@ -132,19 +122,6 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
           ),
         ),
         centerTitle: true,
-        actions: [
-          TextButton(
-            onPressed: _saveEquipment,
-            child: const Text(
-              '保存',
-              style: TextStyle(
-                color: Colors.blue,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -196,6 +173,48 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                 children: [
                   _buildDateField(),
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      // 将底部操作区改为 bottomSheet 以与其他页面风格一致
+      bottomSheet: SafeArea(
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 25,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('取消'),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                flex: 75,
+                child: ElevatedButton(
+                  onPressed: _saveEquipment,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text('保存'),
+                ),
               ),
             ],
           ),

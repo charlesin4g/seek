@@ -5,7 +5,7 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-public class AddGearDto {
+public class EditGearRequest {
     private String name;
     private String description;
     private String category;
@@ -17,5 +17,4 @@ public class AddGearDto {
     private double price;
     private boolean essential = true;
     private int quantity;
-    private Long owner;
 }

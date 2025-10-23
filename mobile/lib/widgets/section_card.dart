@@ -4,12 +4,14 @@ class SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
   final EdgeInsetsGeometry? padding;
+  final Widget? trailing; // 可选右侧操作按钮/区域
 
   const SectionCard({
     super.key,
     required this.title,
     required this.children,
     this.padding,
+    this.trailing,
   });
 
   @override
@@ -30,14 +32,34 @@ class SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
+          // 标题行，支持右侧操作区
+          if (trailing == null) ...[
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
             ),
-          ),
+          ] else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                ),
+                // 右侧操作区
+                trailing!,
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           ...children,
         ],

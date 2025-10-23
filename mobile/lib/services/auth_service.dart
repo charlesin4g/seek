@@ -30,6 +30,13 @@ class AuthService {
     }
   }
 
+  // Debug/Bootstrap: mark as logged in with a fetched user object
+  Future<void> bootstrapWithUser(Map<String, dynamic> user) async {
+    await StorageService().cacheUser(user);
+    _isLoggedIn = true;
+    _currentUser = user['username']?.toString();
+  }
+
   Future<void> logout() async {
     await Future.delayed(const Duration(milliseconds: 200));
     _isLoggedIn = false;

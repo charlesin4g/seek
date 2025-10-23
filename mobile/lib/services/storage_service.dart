@@ -8,6 +8,9 @@ class StorageService {
 
   static const String userKey = 'user_key';
 
+  // In-memory cached user for sync access
+  Map<String, dynamic>? _cachedUser;
+
   Future<void> setString(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, value);
@@ -26,7 +29,12 @@ class StorageService {
     final value = await getString(key);
     if (value == null) return null;
     try {
-      return jsonDecode(value) as Map<String, dynamic>;
+      final parsed = jsonDecode(value) as Map<String, dynamic>;
+      // Keep in-memory cache in sync when reading
+      if (key == userKey) {
+        _cachedUser = parsed;
+      }
+      return parsed;
     } catch (_) {
       return null;
     }
@@ -34,10 +42,16 @@ class StorageService {
 
   // Convenience helpers for admin user
   Future<void> cacheUser(Map<String, dynamic> user) async {
+    _cachedUser = user; // update sync cache
     await setJson(userKey, user);
   }
 
   Future<Map<String, dynamic>?> getCachedAdminUser() async {
     return getJson(userKey);
+  }
+
+  // Synchronous getter for cached user (set during login)
+  Map<String, dynamic>? getCachedUserSync() {
+    return _cachedUser;
   }
 }

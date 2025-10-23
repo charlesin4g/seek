@@ -3,7 +3,7 @@ package com.charles.seek.dto.gear.response;
 import lombok.Data;
 
 @Data
-public class QueryGearListDto {
+public class QueryGearListResponse {
     private String id;
     private String name;
     private String category;

@@ -1,23 +1,23 @@
 package com.charles.seek.service;
 
-import com.charles.seek.dto.gear.request.AddGearDto;
-import com.charles.seek.dto.gear.request.EditGearDto;
-import com.charles.seek.dto.gear.response.BrandDto;
-import com.charles.seek.dto.gear.response.CategoryDto;
-import com.charles.seek.dto.gear.response.QueryGearListDto;
+import com.charles.seek.dto.gear.request.AddGearRequest;
+import com.charles.seek.dto.gear.request.EditGearRequest;
+import com.charles.seek.dto.gear.response.BrandResponse;
+import com.charles.seek.dto.gear.response.CategoryResponse;
+import com.charles.seek.dto.gear.response.QueryGearListResponse;
 
 import java.util.List;
 
 
 public interface GearService {
 
-    List<BrandDto> getAllBrands();
+    List<BrandResponse> getAllBrands();
 
-    List<QueryGearListDto> getMyGears(String owner);
+    List<QueryGearListResponse> getMyGears(String owner);
 
-    List<CategoryDto> getCategories();
+    List<CategoryResponse> getCategories();
 
-    List<QueryGearListDto> addGear(AddGearDto gear);
+    List<QueryGearListResponse> addGear(AddGearRequest gear);
 
-    List<QueryGearListDto> editGear(Long gearId,EditGearDto gear);
+    List<QueryGearListResponse> editGear(Long gearId, EditGearRequest gear);
 }

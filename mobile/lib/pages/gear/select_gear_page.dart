@@ -13,14 +13,11 @@ class EquipmentSelectionPage extends StatelessWidget {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: TextButton(
+        leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text(
-            '取消',
-            style: TextStyle(
-              color: Colors.blue,
-              fontSize: 16,
-            ),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: Colors.blue,
           ),
         ),
         title: const Text(

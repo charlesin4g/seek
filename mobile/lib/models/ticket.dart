@@ -1,3 +1,5 @@
+import '../services/storage_service.dart';
+
 class Ticket {
   final String? id;
   final String type; // 'train' | 'flight'
@@ -51,30 +53,35 @@ class Ticket {
     this.remark,
   });
 
-  factory Ticket.fromJson(Map<String, dynamic> json) {
-    DateTime parseDate(dynamic v) {
-      if (v is String) return DateTime.parse(v);
-      if (v is int) return DateTime.fromMillisecondsSinceEpoch(v);
+  static DateTime parseDate(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    final s = value.toString();
+    try {
+      return DateTime.parse(s);
+    } catch (_) {
       return DateTime.now();
     }
+  }
 
-    double parseDouble(dynamic v) {
-      if (v is num) return v.toDouble();
-      return double.tryParse(v?.toString() ?? '0') ?? 0.0;
-    }
+  static double parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    return double.tryParse(value.toString()) ?? 0.0;
+  }
 
+  factory Ticket.fromJson(Map<String, dynamic> json) {
     return Ticket(
       id: json['id']?.toString(),
-      type: (json['type'] ?? 'train').toString(),
-      code: (json['code'] ?? '').toString(),
-      departStation: (json['departStation'] ?? '').toString(),
-      arriveStation: (json['arriveStation'] ?? '').toString(),
-      departTime: parseDate(json['departTime']),
-      arriveTime: parseDate(json['arriveTime']),
+      type: _mapCategoryToType(json['category']?.toString() ?? ''),
+      code: (json['code'] ?? json['travelNo'] ?? '').toString(),
+      departStation: (json['departStation'] ?? json['fromPlace'] ?? '').toString(),
+      arriveStation: (json['arriveStation'] ?? json['toPlace'] ?? '').toString(),
+      departTime: parseDate(json['departTime'] ?? json['departureTime']),
+      arriveTime: parseDate(json['arriveTime'] ?? json['arrivalTime']),
       durationMinutes: int.tryParse(json['durationMinutes']?.toString() ?? '0') ?? 0,
       coachOrCabin: json['coachOrCabin']?.toString(),
       seatNo: json['seatNo']?.toString(),
-      seatType: json['seatType']?.toString(),
+      seatType: (json['seatType'] ?? json['seatClass'])?.toString(),
       gateOrCheckin: json['gateOrCheckin']?.toString(),
       waitingArea: json['waitingArea']?.toString(),
       price: parseDouble(json['price']),
@@ -88,28 +95,33 @@ class Ticket {
   }
 
   Map<String, dynamic> toJson() {
+    // 仅发送后端 AddTicketRequest 需要/接受的字段，避免未知字段导致校验问题
+    final cachedUser = StorageService().getCachedUserSync();
+    final ownerId = cachedUser?['userId']?.toString();
     return {
-      if (id != null) 'id': id,
-      'type': type,
-      'code': code,
-      'departStation': departStation,
-      'arriveStation': arriveStation,
-      'departTime': departTime.toIso8601String(),
-      'arriveTime': arriveTime.toIso8601String(),
-      'durationMinutes': durationMinutes,
-      'coachOrCabin': coachOrCabin,
+      'category': type == 'flight' ? 'Flight' : 'Train',
+      'travelNo': code,
+      'fromPlace': departStation,
+      'toPlace': arriveStation,
+      'departureTime': departTime.toIso8601String(),
+      'arrivalTime': arriveTime.toIso8601String(),
+      'seatClass': seatType,
       'seatNo': seatNo,
-      'seatType': seatType,
-      'gateOrCheckin': gateOrCheckin,
-      'waitingArea': waitingArea,
       'price': price,
-      'discount': discount,
-      'ticketCategory': ticketCategory,
-      'status': status,
-      'orderNo': orderNo,
+      'currency': 'CNY',
       'passengerName': passengerName,
-      'remark': remark,
-      'owner': 1,
+      'owner': ownerId ?? '1',
     };
+  }
+
+  static String _mapCategoryToType(String category) {
+    switch (category.toLowerCase()) {
+      case 'flight':
+        return 'flight';
+      case 'train':
+        return 'train';
+      default:
+        return category.isEmpty ? 'train' : category.toLowerCase();
+    }
   }
 }

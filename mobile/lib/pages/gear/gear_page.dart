@@ -78,52 +78,6 @@ class _GearPageState extends State<GearPage> {
             ],
           ),
           actions: [
-            GestureDetector(
-              onTap: () async {
-                final changed = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const EquipmentSelectionPage(),
-                  ),
-                );
-                if (changed == true && mounted) {
-                  setState(() {});
-                }
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.edit, color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () async {
-                final added = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AddEquipmentPage(),
-                  ),
-                );
-                if (added == true && mounted) {
-                  setState(() {});
-                }
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 8),
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: Colors.grey),
               onSelected: (value) async {
@@ -218,7 +172,7 @@ class _GearPageState extends State<GearPage> {
             }
 
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
               child: Column(
                 children: [
                   _buildSummaryCard(stats),
@@ -250,6 +204,45 @@ class _GearPageState extends State<GearPage> {
             );
           },
         ),
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton(
+              backgroundColor: Colors.blue,
+              heroTag: 'fab-edit',
+              child: const Icon(Icons.edit, color: Colors.white),
+              onPressed: () async {
+                final changed = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const EquipmentSelectionPage(),
+                  ),
+                );
+                if (changed == true && mounted) {
+                  setState(() {});
+                }
+              },
+            ),
+            const SizedBox(height: 12),
+            FloatingActionButton(
+              backgroundColor: Colors.green,
+              heroTag: 'fab-add',
+              child: const Icon(Icons.add, color: Colors.white),
+              onPressed: () async {
+                final added = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AddEquipmentPage(),
+                  ),
+                );
+                if (added == true && mounted) {
+                  setState(() {});
+                }
+              },
+            ),
+          ],
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -455,83 +448,109 @@ class _GearPageState extends State<GearPage> {
     return SectionCard(
       title: category,
       children: [
-        Table(
-          columnWidths: const {
-            0: FlexColumnWidth(2),
-            1: FlexColumnWidth(1),
-            2: FlexColumnWidth(1.5),
-            3: FlexColumnWidth(1.5),
-            4: FlexColumnWidth(1.5),
-          },
-          children: [
-            const TableRow(
-              children: [
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '装备名字',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '数目',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '重量 (g)',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '价格',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  child: Text(
-                    '购入时间',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ],
-            ),
-            ...data.map(
-              (item) => TableRow(
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Table(
+            columnWidths: const {
+              0: IntrinsicColumnWidth(),
+              1: FixedColumnWidth(72),
+              2: FixedColumnWidth(100),
+              3: FixedColumnWidth(100),
+              4: FixedColumnWidth(100),
+            },
+            children: [
+              const TableRow(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text('${brandDict[item.brand] ?? item.brand} ${item.name}'),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(item.quantity.toString()),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(item.weight.toString()),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Text(item.price.toString()),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.only(top: 8, bottom: 8, right: 12),
                     child: Text(
-                      '${(item.purchaseDate.year % 100).toString().padLeft(2, '0')}-${item.purchaseDate.month.toString().padLeft(2, '0')}',
+                      '装备名字',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      '数目',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      '重量 (g)',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      '价格',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      '购入时间',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              ...data.map(
+                (item) => TableRow(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8, bottom: 8, right: 12),
+                      child: Text(
+                        '${brandDict[item.brand] ?? item.brand} ${item.name}',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.visible,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        item.quantity.toString(),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        item.weight.toString(),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        item.price.toString(),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        '${(item.purchaseDate.year % 100).toString().padLeft(2, '0')}-${item.purchaseDate.month.toString().padLeft(2, '0')}',
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );

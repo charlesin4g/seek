@@ -1,11 +1,11 @@
 package com.charles.seek.controller;
 
 import com.charles.seek.constant.GearSizeEnum;
-import com.charles.seek.dto.gear.request.AddGearDto;
-import com.charles.seek.dto.gear.request.EditGearDto;
-import com.charles.seek.dto.gear.response.BrandDto;
-import com.charles.seek.dto.gear.response.CategoryDto;
-import com.charles.seek.dto.gear.response.QueryGearListDto;
+import com.charles.seek.dto.gear.request.AddGearRequest;
+import com.charles.seek.dto.gear.request.EditGearRequest;
+import com.charles.seek.dto.gear.response.BrandResponse;
+import com.charles.seek.dto.gear.response.CategoryResponse;
+import com.charles.seek.dto.gear.response.QueryGearListResponse;
 import com.charles.seek.service.GearService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -37,7 +37,7 @@ public class GearController {
      * @return
      */
     @GetMapping("/category")
-    public ResponseEntity<List<CategoryDto>> getCategory() {
+    public ResponseEntity<List<CategoryResponse>> getCategory() {
         return new ResponseEntity<>(gearService.getCategories(), HttpStatus.OK);
     }
 
@@ -45,7 +45,7 @@ public class GearController {
      * 获取品牌列表
      */
     @GetMapping("/brands")
-    public ResponseEntity<List<BrandDto>> getBrands() {
+    public ResponseEntity<List<BrandResponse>> getBrands() {
         return new ResponseEntity<>(gearService.getAllBrands(), HttpStatus.OK);
     }
 
@@ -53,7 +53,7 @@ public class GearController {
      * 获取我的装备列表
      */
     @GetMapping("/my")
-    public ResponseEntity<List<QueryGearListDto>> getMyGears(@RequestParam(name = "owner") String owner) {
+    public ResponseEntity<List<QueryGearListResponse>> getMyGears(@RequestParam(name = "owner") String owner) {
         return new ResponseEntity<>(gearService.getMyGears(owner), HttpStatus.OK);
     }
 
@@ -61,7 +61,7 @@ public class GearController {
      * 添加装备
      */
     @PutMapping("/add")
-    public ResponseEntity<List<QueryGearListDto>> addGear(@RequestBody AddGearDto gear) {
+    public ResponseEntity<List<QueryGearListResponse>> addGear(@RequestBody AddGearRequest gear) {
         return new ResponseEntity<>(gearService.addGear(gear), HttpStatus.OK);
     }
 
@@ -69,7 +69,7 @@ public class GearController {
      * 修改装备
      */
     @PostMapping("/edit")
-    public ResponseEntity<List<QueryGearListDto>> editGear(@RequestParam Long gearId, @RequestBody EditGearDto gear) {
+    public ResponseEntity<List<QueryGearListResponse>> editGear(@RequestParam Long gearId, @RequestBody EditGearRequest gear) {
         return new ResponseEntity<>(gearService.editGear(gearId,gear), HttpStatus.OK);
     }
 }

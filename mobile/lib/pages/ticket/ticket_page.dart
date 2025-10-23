@@ -3,6 +3,7 @@ import '../../widgets/section_card.dart';
 import '../../services/ticket_api.dart';
 import '../../models/ticket.dart';
 import 'add_ticket_page.dart';
+import 'edit_ticket_page.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({super.key});
@@ -50,24 +51,7 @@ class _TicketPageState extends State<TicketPage> {
               Text('票据管理', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
             ],
           ),
-          actions: [
-            GestureDetector(
-              onTap: () async {
-                final added = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const AddTicketPage()),
-                );
-                if (added == true && mounted) setState(() {});
-              },
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(20)),
-                child: const Icon(Icons.add, color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
+          actions: const [],
         ),
         body: FutureBuilder<List<Ticket>>(
           future: _loadTickets(),
@@ -84,7 +68,7 @@ class _TicketPageState extends State<TicketPage> {
                   children: const [
                     Padding(
                       padding: EdgeInsets.all(8.0),
-                      child: Text('暂无票据，点击右上角 + 新建。'),
+                      child: Text('暂无票据，点击右下角 + 新建。'),
                     ),
                   ],
                 ),
@@ -99,6 +83,20 @@ class _TicketPageState extends State<TicketPage> {
                 final t = tickets[i];
                 return SectionCard(
                   title: '${t.type == 'train' ? '火车票' : '飞机票'} · ${t.code}',
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                    iconSize: 18, // 做得小一点
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    tooltip: '编辑',
+                    onPressed: t.id == null ? null : () async {
+                      final updated = await Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => EditTicketPage(ticket: t)),
+                      );
+                      if (updated == true && mounted) setState(() {});
+                    },
+                  ),
                   children: [
                     Row(
                       children: [
@@ -137,6 +135,18 @@ class _TicketPageState extends State<TicketPage> {
             );
           },
         ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: Colors.green,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () async {
+            final added = await Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddTicketPage()),
+            );
+            if (added == true && mounted) setState(() {});
+          },
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }

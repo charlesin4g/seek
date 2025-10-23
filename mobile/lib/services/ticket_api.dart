@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'http_client.dart';
+import 'storage_service.dart';
 
 class TicketApi {
   TicketApi({HttpClient? client}) : _client = client ?? HttpClient();
@@ -12,13 +13,24 @@ class TicketApi {
   }
 
   Future<List<Map<String, dynamic>>> getMyTickets() async {
-    final raw = await _client.getJson('/api/ticket/my?owner=1');
+    // 优先使用内存缓存的用户ID，若为空则从持久化存储读取
+    final cached = StorageService().getCachedUserSync();
+    String owner = cached?['userId']?.toString() ?? '1';
+    if (cached == null) {
+      final persisted = await StorageService().getCachedAdminUser();
+      final persistedOwner = persisted?['userId']?.toString();
+      if (persistedOwner != null && persistedOwner.isNotEmpty) {
+        owner = persistedOwner;
+      }
+    }
+
+    final raw = await _client.getJson('/api/ticket/owner?owner=$owner');
     final decoded = jsonDecode(raw) as List;
     return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
   }
 
   Future<void> editTicket(String ticketId, Map<String, dynamic> data) async {
-    await _client.postJson('/api/ticket/edit?ticketId=$ticketId', body: data);
+    await _client.putJson('/api/ticket/edit?ticketId=$ticketId', body: data);
   }
 
   Future<Map<String, dynamic>> getAirportByIata(String iata) async {

@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface TrailRepository extends JpaRepository<TrailModel, Long> {
     List<TrailModel> findByOwnerOrderByStartTimeDesc(String owner);
+    List<TrailModel> findByActivity_IdOrderByStartTimeDesc(Long activityId);
 }
