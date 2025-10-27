@@ -18,13 +18,6 @@ class Env {
     defaultValue: 'http://127.0.0.1:8080',
   );
 
-  /// 后端 API 基础地址（Web 平台默认 8081）
-  /// 可通过 --dart-define=API_BASE_URL_WEB=... 覆盖，例如：https://api-web.example.com
-  static const String apiBaseUrlWeb = String.fromEnvironment(
-    'API_BASE_URL_WEB',
-    defaultValue: 'http://127.0.0.1:8081',
-  );
-
   /// 根据平台返回后端基础地址（Web/非 Web）
-  static String get backendBaseUrl => kIsWeb ? apiBaseUrlWeb : apiBaseUrl;
+  static String get backendBaseUrl => apiBaseUrl;
 }
