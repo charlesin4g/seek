@@ -122,7 +122,9 @@ public class TicketModel extends BaseEntity {
      */
     @PositiveOrZero(message = "票价不能为负数")
     @Digits(integer = 12, fraction = 2, message = "票价格式不正确")
-    @Column(name = "price", columnDefinition = "NUMERIC(12,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "price", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层或构造器初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("票价")
     private double price;
 

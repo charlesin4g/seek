@@ -2,7 +2,8 @@ import 'http_client.dart';
 import 'dart:convert';
 
 class UserApi {
-  UserApi({HttpClient? client}) : _client = client ?? HttpClient();
+  /// 默认使用全局共享的 HttpClient
+  UserApi({HttpClient? client}) : _client = client ?? HttpClient.shared;
 
   final HttpClient _client;
 

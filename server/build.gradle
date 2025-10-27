@@ -22,6 +22,8 @@ dependencies {
 
     // ===== Web 应用必备 =====
     implementation 'org.springframework.boot:spring-boot-starter-web'  // REST API/MVC
+    // Bean Validation（JSR 380 / Jakarta Validation），用于 @Validated/@Valid 参数校验
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
     // ===== 数据库相关 =====
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA 支持

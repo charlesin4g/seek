@@ -55,7 +55,9 @@ public class ActivityModel extends BaseEntity {
     /** 距离(米) */
     @PositiveOrZero
     @Digits(integer = 12, fraction = 2)
-    @Column(name = "distance", columnDefinition = "NUMERIC(12,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "distance", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("距离(米)")
     private Double distance = 0.0;
 
@@ -80,40 +82,52 @@ public class ActivityModel extends BaseEntity {
     /** 海拔爬升(米) */
     @PositiveOrZero
     @Digits(integer = 8, fraction = 2)
-    @Column(name = "elevation_gain", columnDefinition = "NUMERIC(8,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "elevation_gain", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("海拔爬升(米)")
     private Double elevationGain = 0.0;
 
     /** 海拔下降(米) */
     @PositiveOrZero
     @Digits(integer = 8, fraction = 2)
-    @Column(name = "elevation_loss", columnDefinition = "NUMERIC(8,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "elevation_loss", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("海拔下降(米)")
     private Double elevationLoss = 0.0;
 
     /** 最低海拔(米) */
     @Digits(integer = 8, fraction = 2)
-    @Column(name = "min_elevation", columnDefinition = "NUMERIC(8,2)")
+    // 使用 DOUBLE PRECISION 存储海拔，避免小数位约束导致 DDL 异常
+    @Column(name = "min_elevation", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最低海拔(米)")
     private Double minElevation;
 
     /** 最高海拔(米) */
     @Digits(integer = 8, fraction = 2)
-    @Column(name = "max_elevation", columnDefinition = "NUMERIC(8,2)")
+    // 使用 DOUBLE PRECISION 存储海拔，避免小数位约束导致 DDL 异常
+    @Column(name = "max_elevation", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最高海拔(米)")
     private Double maxElevation;
 
     /** 最大速度(m/s) */
     @PositiveOrZero
     @Digits(integer = 6, fraction = 2)
-    @Column(name = "max_speed", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "max_speed", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("最大速度(m/s)")
     private Double maxSpeed = 0.0;
 
     /** 平均速度(m/s) */
     @PositiveOrZero
     @Digits(integer = 6, fraction = 2)
-    @Column(name = "avg_speed", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "avg_speed", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("平均速度(m/s)")
     private Double avgSpeed = 0.0;
 

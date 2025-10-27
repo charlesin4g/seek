@@ -52,18 +52,21 @@ public class AirportModel extends BaseEntity {
 
     @DecimalMin(value = "-90.0", message = "纬度范围应在[-90,90]")
     @DecimalMax(value = "90.0", message = "纬度范围应在[-90,90]")
-    @Column(name = "latitude", columnDefinition = "NUMERIC(9,6)")
+    @Column(name = "latitude", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("纬度")
     private Double latitude;
 
     @DecimalMin(value = "-180.0", message = "经度范围应在[-180,180]")
     @DecimalMax(value = "180.0", message = "经度范围应在[-180,180]")
-    @Column(name = "longitude", columnDefinition = "NUMERIC(9,6)")
+    @Column(name = "longitude", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("经度")
     private Double longitude;
 
     @PositiveOrZero(message = "海拔不能为负数")
-    @Column(name = "elevation", columnDefinition = "NUMERIC(6,2)")
+    @Column(name = "elevation", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("海拔(米)")
     private Double elevation;
 }

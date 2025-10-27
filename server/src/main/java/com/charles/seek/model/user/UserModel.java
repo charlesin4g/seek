@@ -88,4 +88,22 @@ public class UserModel extends BaseEntity {
     @Column(name = "signature", length = 200)
     @Comment("个人签名")
     private String signature;
+
+    /**
+     * 头像地址
+     * 用户头像图片的 URL
+     */
+    @Size(max = 255, message = "头像地址长度不能超过255个字符")
+    @Column(name = "avatar_url", length = 255)
+    @Comment("用户头像 URL")
+    private String avatarUrl;
+
+    /**
+     * 背景图地址
+     * 用户主页背景图的 URL
+     */
+    @Size(max = 255, message = "背景图地址长度不能超过255个字符")
+    @Column(name = "background_url", length = 255)
+    @Comment("用户背景图 URL")
+    private String backgroundUrl;
 }

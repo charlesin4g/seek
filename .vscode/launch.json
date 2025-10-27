@@ -16,13 +16,6 @@
             "request": "launch",
             "mainClass": "com.charles.seek.SeekApplication",
             "projectName": "seek-server"
-        },
-        {
-            "type": "java",
-            "name": "SnowflakeUtils",
-            "request": "launch",
-            "mainClass": "com.charles.seek.utils.SnowflakeUtils",
-            "projectName": "seek-server"
         }
     ]
 }

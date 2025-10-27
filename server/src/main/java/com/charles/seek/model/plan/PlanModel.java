@@ -38,7 +38,9 @@ public class PlanModel extends BaseEntity {
 
     @PositiveOrZero
     @Digits(integer = 5, fraction = 2)
-    @Column(name = "distance", columnDefinition = "NUMERIC(7,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "distance", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("徒步距离(公里)")
     private Double distance = 0.0;
 

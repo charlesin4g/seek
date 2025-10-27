@@ -47,7 +47,9 @@ public class TrailModel extends BaseEntity {
 
     @PositiveOrZero
     @Digits(integer = 12, fraction = 2)
-    @Column(name = "distance", columnDefinition = "NUMERIC(12,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "distance", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("总距离(米)")
     private double distance;
 
@@ -58,29 +60,41 @@ public class TrailModel extends BaseEntity {
 
     @PositiveOrZero
     @Digits(integer = 6, fraction = 2)
-    @Column(name = "avg_speed", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "avg_speed", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("平均速度(m/s)")
     private double avgSpeed;
 
     @PositiveOrZero
     @Digits(integer = 6, fraction = 2)
-    @Column(name = "elevation_gain", columnDefinition = "NUMERIC(6,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "elevation_gain", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过应用层初始化，避免 PostgreSQL ALTER TYPE 语法错误
     @Comment("累计爬升(米)")
     private double elevationGain;
 
-    @Column(name = "min_lat", columnDefinition = "NUMERIC(9,6)")
+    // 经纬度使用 DOUBLE PRECISION 存储，以避免 scale 推断影响 DDL
+    @Column(name = "min_lat", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最小纬度")
     private Double minLat;
 
-    @Column(name = "min_lon", columnDefinition = "NUMERIC(9,6)")
+    // 经纬度使用 DOUBLE PRECISION 存储，以避免 scale 推断影响 DDL
+    @Column(name = "min_lon", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最小经度")
     private Double minLon;
 
-    @Column(name = "max_lat", columnDefinition = "NUMERIC(9,6)")
+    // 经纬度使用 DOUBLE PRECISION 存储，以避免 scale 推断影响 DDL
+    @Column(name = "max_lat", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最大纬度")
     private Double maxLat;
 
-    @Column(name = "max_lon", columnDefinition = "NUMERIC(9,6)")
+    // 经纬度使用 DOUBLE PRECISION 存储，以避免 scale 推断影响 DDL
+    @Column(name = "max_lon", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION 避免 Hibernate 对浮点类型设置 scale 报错
     @Comment("最大经度")
     private Double maxLon;
 

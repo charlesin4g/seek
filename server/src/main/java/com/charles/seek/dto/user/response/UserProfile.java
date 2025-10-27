@@ -11,4 +11,6 @@ public class UserProfile {
     private String phone;
     private int sex;
     private String signature;
+    private String avatarUrl;
+    private String backgroundUrl;
 }

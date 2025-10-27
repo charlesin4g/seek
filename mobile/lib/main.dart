@@ -7,6 +7,7 @@ import 'widgets/tab_scaffold.dart';
 import 'services/auth_service.dart';
 import 'services/user_api.dart';
 import 'services/env.dart';
+import 'services/storage_service.dart';
 
 void main() {
   // 初始化绑定，确保可以设置错误处理器
@@ -117,7 +118,7 @@ class _HomeTabsState extends State<HomeTabs> {
   int _currentIndex = 0;
 
   late final List<Widget> _pages = <Widget>[
-    const TabScaffold(title: 'Home', icon: Icons.home),
+    HomePage(onNavigate: (index) => setState(() => _currentIndex = index)),
     const TicketPage(),
     const GearPage(),
     const TabScaffold(title: 'Messages', icon: Icons.message),
@@ -146,6 +147,102 @@ class _HomeTabsState extends State<HomeTabs> {
         ],
         backgroundColor: colorScheme.surface,
         indicatorColor: colorScheme.secondaryContainer,
+      )
+    );
+  }
+}
+class HomePage extends StatelessWidget {
+  const HomePage({super.key, required this.onNavigate});
+  final void Function(int) onNavigate;
+
+  @override
+  Widget build(BuildContext context) {
+    final cached = StorageService().getCachedUserSync();
+    final displayName = (cached?['displayName'] ?? cached?['username'] ?? AuthService().currentUser ?? '见山用户').toString();
+    final mq = MediaQuery.of(context);
+    final minHeight = mq.size.height - mq.padding.top - mq.padding.bottom - 48;
+
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: minHeight, maxWidth: 600),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween, // 上下分散对齐
+                children: [
+                  // 上方欢迎文本
+                  Column(
+                    children: [
+                      const SizedBox(height: 40),
+                      Text(
+                        '欢迎回来，$displayName',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  
+                  // 下方按钮区域
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 60), // 底部间距
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _QuickButton(
+                          icon: Icons.confirmation_number,
+                          label: '票据管理',
+                          onPressed: () => onNavigate(1),
+                        ),
+                        const SizedBox(height: 20),
+                        _QuickButton(
+                          icon: Icons.sports,
+                          label: '装备管理',
+                          onPressed: () => onNavigate(2),
+                        ),
+                        const SizedBox(height: 20), 
+                        _QuickButton(
+                          icon: Icons.person,
+                          label: '个人信息',
+                          onPressed: () => onNavigate(4),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickButton extends StatelessWidget {
+  const _QuickButton({required this.icon, required this.label, required this.onPressed});
+  final IconData icon;
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 64,
+      child: FilledButton(
+        style: FilledButton.styleFrom(padding: const EdgeInsets.all(16)),
+        onPressed: onPressed,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 22),
+            const SizedBox(width: 10),
+            Text(label),
+          ],
+        ),
       ),
     );
   }

@@ -3,7 +3,8 @@ import 'http_client.dart';
 import 'storage_service.dart';
 
 class TicketApi {
-  TicketApi({HttpClient? client}) : _client = client ?? HttpClient();
+  /// 默认使用全局共享的 HttpClient
+  TicketApi({HttpClient? client}) : _client = client ?? HttpClient.shared;
 
   final HttpClient _client;
 

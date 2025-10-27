@@ -60,7 +60,9 @@ public class GearModel extends BaseEntity {
      */
     @PositiveOrZero(message = "重量不能为负数")
     @Digits(integer = 5, fraction = 2, message = "重量格式不正确")
-    @Column(name = "weight", columnDefinition = "NUMERIC(7,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "weight", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过构造函数初始化，避免 PostgreSQL ALTER TYPE 语法错误
     private double weight;
     /**
      * 购买/办理日期
@@ -73,7 +75,9 @@ public class GearModel extends BaseEntity {
      */
     @PositiveOrZero(message = "价格不能为负数")
     @Digits(integer = 10, fraction = 2, message = "价格格式不正确")
-    @Column(name = "price", columnDefinition = "NUMERIC(12,2) DEFAULT 0.00")
+    // 移除 DEFAULT 0.0，避免 PostgreSQL ALTER COLUMN 语法错误；保持为 DOUBLE PRECISION
+    @Column(name = "price", columnDefinition = "DOUBLE PRECISION")
+    // 使用 DOUBLE PRECISION，默认值通过构造函数初始化，避免 PostgreSQL ALTER TYPE 语法错误
     private double price;
     /**
      * 是否使用中/是否有效

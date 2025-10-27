@@ -4,6 +4,13 @@ import '../../services/storage_service.dart';
 import '../../services/user_api.dart';
 import '../../services/activity_api.dart';
 import '../../widgets/section_card.dart';
+import '../../services/oss_service.dart';
+import '../../services/photo_api.dart';
+// 条件导入上传助手：Web 使用 dart:html 实现，其他平台为占位
+import '../../utils/upload_helper_stub.dart'
+    if (dart.library.html) '../../utils/upload_helper_web.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter/foundation.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -16,6 +23,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String _displayName = '加载中...';
   String _signature = '加载中...';
   String? _avatarUrl;
+  String? _backgroundUrl; // 个人主页背景图 URL（私有签名访问）
 
   Future<void> _loadUserInfo() async {
     try {
@@ -31,8 +39,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
             setState(() {
               _displayName = userProfile['displayName'] ?? userProfile['username'] ?? '见山资深用户';
               _signature = userProfile['signature'] ?? '这个人很懒，什么都没有留下';
+              // 使用 OssService 解析私有头像 URL（可生成临时签名访问）
               final avatar = userProfile['avatarUrl'] ?? userProfile['avatar'];
-              _avatarUrl = avatar == null ? null : avatar.toString();
+              _avatarUrl = OssService().resolvePrivateUrl(avatar?.toString());
+              // 使用 OssService 解析私有背景图 URL（可生成临时签名访问）
+              final bg = userProfile['backgroundUrl'] ?? userProfile['background'];
+              _backgroundUrl = OssService().resolvePrivateUrl(bg?.toString());
             });
           }
         } else {
@@ -85,14 +97,14 @@ class _UserProfilePageState extends State<UserProfilePage> {
   final ScrollController _scrollController = ScrollController();
 
   @override
-   void initState() {
-     super.initState();
-     _loadUserInfo();
-     _loadActivities();
-     // 初始化照片墙示例图片，可后续替换为真实用户照片
-     _photoUrls = List.generate(12, (i) => 'https://picsum.photos/seed/seek_photo_$i/300/200');
-     _scrollController.addListener(_onScroll);
-   }
+  void initState() {
+    super.initState();
+    _loadUserInfo();
+    _loadActivities();
+    // 加载用户照片墙数据（后端接口），失败时可回退为占位图
+    _loadPhotos();
+    _scrollController.addListener(_onScroll);
+  }
 
    @override
    void dispose() {
@@ -122,11 +134,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _totalDescent = _statsData.fold(0.0, (p, e) => p + e.descent);
   }
 
-  void _initSessionRecords() {
-    // 已改为从后端加载活动，不再使用本地模拟数据
-    _sessions = [];
-  }
-
   Future<void> _loadMoreSessions() async {
     if (_loadingMore) return;
     setState(() => _loadingMore = true);
@@ -146,6 +153,12 @@ class _UserProfilePageState extends State<UserProfilePage> {
         title: const Text('个人主页'),
         actions: [
           IconButton(icon: const Icon(Icons.info_outline), onPressed: _showFeatureHint),
+          // 前端上传入口（Web 平台）
+          IconButton(
+            icon: const Icon(Icons.cloud_upload_outlined),
+            onPressed: _uploadPhoto,
+            tooltip: '上传照片',
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -154,6 +167,21 @@ class _UserProfilePageState extends State<UserProfilePage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // 背景图区域：优先显示用户背景图；否则使用淡色占位
+            Container(
+              height: 140,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.blueGrey.shade50,
+                image: (_backgroundUrl != null && _backgroundUrl!.isNotEmpty)
+                    ? DecorationImage(
+                        image: NetworkImage(_backgroundUrl!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+            ),
+            const SizedBox(height: 12),
             // 头像/昵称/签名
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
@@ -211,6 +239,67 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
+  /// 选择图片并上传到 OSS（Web 平台直传）
+  ///
+  /// 流程：
+  /// 1) 选择图片文件并读取字节；
+  /// 2) 拼接对象 key（含前缀，可包含用户ID与时间戳）；
+  /// 3) 请求后端生成 PUT 临时签名 URL；
+  /// 4) 直接对该 URL 执行 HTTP PUT 上传；
+  /// 5) 上传成功后，调用 /api/photo/add 写入记录并刷新照片墙。
+  Future<void> _uploadPhoto() async {
+    if (!kIsWeb) {
+      _showFeatureHint();
+      return;
+    }
+
+    try {
+      // 1) 选择图片并读取字节
+      final helper = UploadHelper();
+      final Uint8List? bytes = await helper.pickImageBytes();
+      if (bytes == null || bytes.isEmpty) return;
+
+      // 2) 计算对象 key：photos/{owner}/{timestamp}.jpg
+      final cached = await StorageService().getCachedAdminUser();
+      final owner = cached?['userId']?.toString() ?? '1';
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      final objectKey = 'photos/$owner/$ts.jpg';
+
+      // 3) 获取 PUT 签名 URL
+      final signedUrl = await PhotoApi().signPutUrl(objectKey);
+      if (signedUrl == null || signedUrl.isEmpty) {
+        throw Exception('获取上传签名失败');
+      }
+
+      // 4) 上传图片（设置通用 content-type）
+      final putRes = await http.put(
+        Uri.parse(signedUrl),
+        headers: {
+          'Content-Type': 'image/jpeg',
+        },
+        body: bytes,
+      );
+      if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
+        throw Exception('上传失败，状态码 ${putRes.statusCode}');
+      }
+
+      // 5) 记录入库并刷新照片墙
+      await PhotoApi().addPhotoRecord(owner: owner, objectKey: objectKey);
+      await _loadPhotos();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('上传成功')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('上传失败: $e')),
+        );
+      }
+    }
+  }
+
   // 从后端加载活动并构建初始统计与列表
   Future<void> _loadActivities() async {
     try {
@@ -257,6 +346,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
       _buildStatsForScope(_chartScope);
     } catch (e) {
       // 忽略错误以避免页面崩溃，可按需提示
+    }
+  }
+
+  // 从后端加载用户照片墙数据
+  Future<void> _loadPhotos() async {
+    try {
+      // 使用新接口替换占位数据
+      final urls = await PhotoApi().getMyPhotos();
+      if (mounted && urls.isNotEmpty) {
+        setState(() {
+          _photoUrls = urls;
+        });
+      } 
+    } catch (_) {
+      if (mounted) {
+        // 异常回退占位图（避免页面空白）
+        setState(() {
+          _photoUrls = List.generate(6, (i) => 'https://via.placeholder.com/300x200?text=seek_photo_$i');
+        });
+      }
     }
   }
 
@@ -333,7 +442,7 @@ class _DataPoint {
     final double totalDistanceKm;
     final double totalAscentM;
     final double totalDescentM;
-    const _OverviewCard({super.key, required this.totalDistanceKm, required this.totalAscentM, required this.totalDescentM});
+    const _OverviewCard({required this.totalDistanceKm, required this.totalAscentM, required this.totalDescentM});
   
     @override
     Widget build(BuildContext context) {
@@ -341,9 +450,9 @@ class _DataPoint {
         margin: const EdgeInsets.all(12),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -378,7 +487,7 @@ class _DataPoint {
     final String scope;
     final ValueChanged<String> onScopeChange;
     final List<_DataPoint> data;
-    const _DistanceChartCard({super.key, required this.scope, required this.onScopeChange, required this.data});
+    const _DistanceChartCard({required this.scope, required this.onScopeChange, required this.data});
   
     @override
     Widget build(BuildContext context) {
@@ -386,9 +495,9 @@ class _DataPoint {
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.85),
+          color: Colors.white.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4))],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,7 +505,7 @@ class _DataPoint {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('徒步距离（km）', style: Theme.of(context).textTheme.titleMedium),
+                Text('徒步距离(km)', style: Theme.of(context).textTheme.titleMedium),
                 Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: CupertinoSegmentedControl<String>(
@@ -439,7 +548,7 @@ class _DataPoint {
   class _LegendDot extends StatelessWidget {
     final Color color;
     final String label;
-    const _LegendDot({super.key, required this.color, required this.label});
+    const _LegendDot({required this.color, required this.label});
     @override
     Widget build(BuildContext context) {
       return Row(
@@ -455,7 +564,7 @@ class _DataPoint {
   // 照片墙组件：横向滑动的图片缩略图列表
   class _PhotoWall extends StatelessWidget {
     final List<String> photos;
-    const _PhotoWall({super.key, required this.photos});
+    const _PhotoWall({required this.photos});
 
     @override
     Widget build(BuildContext context) {
@@ -469,12 +578,23 @@ class _DataPoint {
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (_, i) => ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              photos[i],
-              width: 140,
-              height: 110,
-              fit: BoxFit.cover,
-            ),
+            child: (() {
+              // 统一使用私有签名 URL 解析，兼容完整 URL 与资源 key
+              final resolved = OssService().resolvePrivateUrl(photos[i]);
+              if (resolved == null || resolved.isEmpty) {
+                return Container(
+                  width: 140,
+                  height: 110,
+                  color: Colors.grey.shade300,
+                );
+              }
+              return Image.network(
+                resolved,
+                width: 140,
+                height: 110,
+                fit: BoxFit.cover,
+              );
+            })(),
           ),
         ),
       );
@@ -544,14 +664,14 @@ class _DataPoint {
     final List<_SessionRecord> sessions;
     final Future<void> Function() onLoadMore;
     final bool loadingMore;
-    const _SessionListCard({super.key, required this.sessions, required this.onLoadMore, required this.loadingMore});
+    const _SessionListCard({required this.sessions, required this.onLoadMore, required this.loadingMore});
     
     @override
     Widget build(BuildContext context) {
       String fmtDuration(int minutes) {
         final h = minutes ~/ 60;
         final m = minutes % 60;
-        return '${h}时${m}分';
+        return '$h时$m分';
       }
       return Column(
         children: [

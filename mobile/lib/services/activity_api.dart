@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'http_client.dart';
 import 'storage_service.dart';
-import 'package:flutter/foundation.dart';
+// 统一由 HttpClient.shared 管理 baseUrl 与请求头
 
 class ActivityApi {
-  ActivityApi({HttpClient? client}) : _client = client ?? HttpClient(baseUrl: kIsWeb ? 'http://127.0.0.1:8081' : 'http://127.0.0.1:8080');
+  /// 默认使用全局共享的 HttpClient
+  ActivityApi({HttpClient? client}) : _client = client ?? HttpClient.shared;
 
   final HttpClient _client;
 

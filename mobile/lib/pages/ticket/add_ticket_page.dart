@@ -7,8 +7,6 @@ import '../../models/ticket.dart';
 import '../../services/storage_service.dart';
 import 'dart:convert';
 import '../../services/station_api.dart';
-import '../../services/http_client.dart';
-import 'package:flutter/foundation.dart';
 
 class AddTicketPage extends StatefulWidget {
   const AddTicketPage({super.key});
@@ -54,10 +52,8 @@ class _AddTicketPageState extends State<AddTicketPage> {
   final FocusNode _arriveFocus = FocusNode();
   String _lastDepartIataQuery = '';
   String _lastArriveIataQuery = '';
-  // 实时火车站联想搜索
-  final StationApi _stationApi = StationApi(
-    client: HttpClient(baseUrl: kIsWeb ? 'http://127.0.0.1:8081' : 'http://127.0.0.1:8080'),
-  );
+  // 实时火车站联想搜索：使用共享 HttpClient，统一管理 baseUrl
+  final StationApi _stationApi = StationApi();
   final List<Map<String, dynamic>> _departStationSuggestions = [];
   final List<Map<String, dynamic>> _arriveStationSuggestions = [];
   String _lastDepartStationQuery = '';
@@ -187,56 +183,6 @@ class _AddTicketPageState extends State<AddTicketPage> {
     return diff.inMinutes.abs();
   }
 
-  Future<void> _pickDate({required bool isDepart}) async {
-    final DateTime initial = isDepart ? _departDateTime : _arriveDateTime;
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initial,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2035),
-    );
-    if (picked != null) {
-      setState(() {
-        if (isDepart) {
-          _departDateTime = DateTime(
-            picked.year, picked.month, picked.day,
-            _departDateTime.hour, _departDateTime.minute,
-          );
-        } else {
-          _arriveDateTime = DateTime(
-            picked.year, picked.month, picked.day,
-            _arriveDateTime.hour, _arriveDateTime.minute,
-          );
-        }
-      });
-    }
-  }
-
-  Future<void> _pickTime({required bool isDepart}) async {
-    final TimeOfDay initial = TimeOfDay.fromDateTime(
-      isDepart ? _departDateTime : _arriveDateTime,
-    );
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
-    if (picked != null) {
-      setState(() {
-        if (isDepart) {
-          _departDateTime = DateTime(
-            _departDateTime.year, _departDateTime.month, _departDateTime.day,
-            picked.hour, picked.minute,
-          );
-        } else {
-          _arriveDateTime = DateTime(
-            _arriveDateTime.year, _arriveDateTime.month, _arriveDateTime.day,
-            picked.hour, picked.minute,
-          );
-        }
-      });
-    }
-  }
-
   void _showSeatTypePicker() {
     final options = _ticketKindCode == 'train'
         ? ['二等座', '一等座', '商务座', '硬座', '软座', '硬卧', '软卧']
@@ -249,10 +195,6 @@ class _AddTicketPageState extends State<AddTicketPage> {
       },
     );
   }
-
-
-  String _fmtDate(DateTime dt) => '${dt.year}年${dt.month.toString().padLeft(2, '0')}月${dt.day.toString().padLeft(2, '0')}日';
-  String _fmtTime(DateTime dt) => '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   // 保存与选择火车站（本地）
   Future<List<Map<String, dynamic>>> _loadSavedStations() async {
@@ -347,44 +289,6 @@ class _AddTicketPageState extends State<AddTicketPage> {
     lonCtrl.dispose();
   }
 
-  Future<void> _showPickStation({required bool isDepart}) async {
-    final stations = await _loadSavedStations();
-    if (stations.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('暂无已保存火车站')));
-      return;
-    }
-    await showModalBottomSheet(
-      context: context,
-      builder: (_) => SafeArea(
-        child: ListView(
-          children: [
-            const ListTile(title: Text('选择火车站', style: TextStyle(fontWeight: FontWeight.bold))),
-            const Divider(height: 0),
-            ...stations.map((s) {
-              final name = s['name']?.toString() ?? '';
-              final city = s['city']?.toString() ?? '';
-              final lat = s['latitude'];
-              final lon = s['longitude'];
-              final subtitle = [
-                if (city.isNotEmpty) city,
-                if (lat is num && lon is num) '(${lat.toStringAsFixed(3)}, ${lon.toStringAsFixed(3)})',
-              ].join(' ');
-              return ListTile(
-                title: Text(name),
-                subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-                onTap: () {
-                  final ctrl = isDepart ? _departStationController : _arriveStationController;
-                  ctrl.text = city.isNotEmpty ? '$name（$city）' : name;
-                  ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
-                  Navigator.pop(context);
-                },
-              );
-            }).toList(),
-          ],
-        ),
-      ),
-    );
-  }
 
   String _fmtDateTime(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
@@ -445,51 +349,6 @@ class _AddTicketPageState extends State<AddTicketPage> {
     );
   }
 
-  Widget _buildDateTimeRow({required String label, required DateTime value, required VoidCallback onPickDate, required VoidCallback onPickTime}) {
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: Text(label, style: const TextStyle(fontSize: 16, color: Colors.black87)),
-        ),
-        Expanded(
-          flex: 3,
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: onPickDate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(_fmtDate(value), style: const TextStyle(color: Colors.blue, fontSize: 16)),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: GestureDetector(
-                  onTap: onPickTime,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(_fmtTime(value), style: const TextStyle(color: Colors.blue, fontSize: 16)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   Future<void> _saveTicket() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -524,7 +383,6 @@ class _AddTicketPageState extends State<AddTicketPage> {
         remark: _remarkController.text.trim().isEmpty ? null : _remarkController.text.trim(),
       );
 
-      print(ticket.toJson());
       await _ticketApi.addTicket(ticket.toJson());
 
       if (mounted) {
@@ -586,7 +444,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                         Expanded(
                           flex: 3,
                           child: DropdownButtonFormField<String>(
-                            value: _ticketKindDisplay,
+                            initialValue: _ticketKindDisplay,
                             isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: '火车票', child: Text('火车票')),
@@ -842,7 +700,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                         Expanded(
                           flex: 3,
                           child: DropdownButtonFormField<String>(
-                            value: _ticketCategoryDisplay,
+                            initialValue: _ticketCategoryDisplay,
                             isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: '成人票', child: Text('成人票')),
@@ -890,7 +748,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                         Expanded(
                           flex: 3,
                           child: DropdownButtonFormField<String>(
-                            value: _ticketStatusDisplay,
+                            initialValue: _ticketStatusDisplay,
                             isExpanded: true,
                             items: const [
                               DropdownMenuItem(value: '已支付', child: Text('已支付')),
