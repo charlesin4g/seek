@@ -8,6 +8,8 @@ import '../../services/gear_api.dart';
 import 'add_gear_page.dart';
 import 'select_gear_page.dart';
 import '../login_page.dart';
+import '../../widgets/refresh_and_empty.dart';
+import '../../widgets/empty_state.dart';
 
 class GearPage extends StatefulWidget {
   const GearPage({super.key});
@@ -171,35 +173,51 @@ class _GearPageState extends State<GearPage> {
               (grouped[gear.category] ??= []).add(gear);
             }
 
-            return SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
-              child: Column(
-                children: [
-                  _buildSummaryCard(stats),
-                  const SizedBox(height: 16),
-                  ...grouped.entries.expand(
-                    (entry) => [
-                      _buildGearTableCard(
-                        categoryDict[entry.key] ?? entry.key,
-                        entry.value,
-                        brandDict,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // 合并所有类别（包括当前没有装备的类别）用于完整统计展示
-                  _buildValueStatsCard(
-                    stats,
-                    categoryDict,
-                    _buildCompleteCategoryValues(stats.categoryValues, categoryDict),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildBrandValueCard(stats),
-                  const SizedBox(height: 16),
-                  _buildBrandQuantityCard(stats),
-                  
-                ],
+            return RefreshAndEmpty(
+              isEmpty: gearList.isEmpty,
+              onRefresh: () async {
+                // 统一刷新：重新执行加载逻辑并触发重建
+                try {
+                  if (mounted) setState(() {});
+                  return true;
+                } catch (_) {
+                  return false;
+                }
+              },
+              emptyIcon: Icons.hiking,
+              emptyTitle: '暂无装备',
+              emptySubtitle: '下拉刷新或点击右下角 + 添加装备',
+              emptyActionText: null,
+              onEmptyAction: null,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                child: Column(
+                  children: [
+                    _buildSummaryCard(stats),
+                    const SizedBox(height: 16),
+                    ...grouped.entries.expand(
+                      (entry) => [
+                        _buildGearTableCard(
+                          categoryDict[entry.key] ?? entry.key,
+                          entry.value,
+                          brandDict,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    // 合并所有类别（包括当前没有装备的类别）用于完整统计展示
+                    _buildValueStatsCard(
+                      stats,
+                      categoryDict,
+                      _buildCompleteCategoryValues(stats.categoryValues, categoryDict),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBrandValueCard(stats),
+                    const SizedBox(height: 16),
+                    _buildBrandQuantityCard(stats),
+                  ],
+                ),
               ),
             );
           },

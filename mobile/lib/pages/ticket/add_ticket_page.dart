@@ -7,6 +7,8 @@ import '../../models/ticket.dart';
 import '../../services/storage_service.dart';
 import 'dart:convert';
 import '../../services/station_api.dart';
+import '../../widgets/offline_prompt.dart'; // 接口失败时提示切换离线
+import '../../services/snapshot_service.dart';
 
 class AddTicketPage extends StatefulWidget {
   const AddTicketPage({super.key});
@@ -62,6 +64,30 @@ class _AddTicketPageState extends State<AddTicketPage> {
   @override
   void initState() {
     super.initState();
+    // 注册新增票据表单快照提供者：离线切换前保存草稿
+    SnapshotService.instance.registerFormProvider('ticket:add', () async {
+      return {
+        'category': _ticketKindCode,
+        'travelNo': _codeController.text.trim(),
+        'fromPlace': _departStationController.text.trim(),
+        'toPlace': _arriveStationController.text.trim(),
+        'departureTime': _departDateTime.toIso8601String(),
+        'arrivalTime': _arriveDateTime.toIso8601String(),
+        'durationMinutes': _durationMinutes,
+        'coachOrCabin': _coachOrCabinController.text.trim(),
+        'seatNo': _seatNoController.text.trim(),
+        'seatClass': _seatTypeDisplay,
+        'gateOrCheckin': _gateOrCheckinController.text.trim(),
+        'waitingArea': _waitingAreaController.text.trim(),
+        'price': double.tryParse(_priceController.text.trim()) ?? 0.0,
+        'discount': _discountController.text.trim(),
+        'ticketCategory': _ticketCategoryDisplay,
+        'status': _ticketStatusDisplay,
+        'orderNo': _orderNoController.text.trim(),
+        'passengerName': _passengerController.text.trim(),
+        'remark': _remarkController.text.trim(),
+      };
+    });
     _departFocus.addListener(() {
       if (_ticketKindCode == 'train' && _departFocus.hasFocus) {
         _loadTopStations(isDepart: true);
@@ -76,6 +102,8 @@ class _AddTicketPageState extends State<AddTicketPage> {
 
   @override
   void dispose() {
+    // 取消注册：页面销毁时移除提供者
+    SnapshotService.instance.unregisterFormProvider('ticket:add');
     _codeController.dispose();
     _departStationController.dispose();
     _arriveStationController.dispose();
@@ -398,6 +426,8 @@ class _AddTicketPageState extends State<AddTicketPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('保存失败: $e'), backgroundColor: Colors.red),
         );
+        // 接口失败：提示用户切换到离线模式
+        await showOfflineSwitchPrompt(context);
       }
     }
   }

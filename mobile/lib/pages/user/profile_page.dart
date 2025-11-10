@@ -11,6 +11,13 @@ import '../../utils/upload_helper_stub.dart'
     if (dart.library.html) '../../utils/upload_helper_web.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
+import '../../services/offline_mode.dart';
+import '../../services/sync_service.dart';
+import '../../services/network_probe_service.dart';
+import '../../services/snapshot_service.dart';
+import '../../services/health_check_service.dart';
+import '../../widgets/refresh_and_empty.dart';
+import '../../widgets/empty_state.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -24,6 +31,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String _signature = '加载中...';
   String? _avatarUrl;
   String? _backgroundUrl; // 个人主页背景图 URL（私有签名访问）
+  // 刷新与页面状态
+  bool _refreshing = false; // 是否处于刷新过程（用于避免重复触发与平滑过渡）
+  bool _loadFailed = false; // 最近一次主动刷新是否失败（控制空态显示）
 
   Future<void> _loadUserInfo() async {
     try {
@@ -104,6 +114,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
     // 加载用户照片墙数据（后端接口），失败时可回退为占位图
     _loadPhotos();
     _scrollController.addListener(_onScroll);
+    // 启动网络探测服务：离线时自动探测并在恢复后触发同步
+    NetworkProbeService.instance.start();
   }
 
    @override
@@ -146,6 +158,86 @@ class _UserProfilePageState extends State<UserProfilePage> {
     });
   }
 
+  /// 主动刷新处理：触发完整数据请求流程（带重试），失败时清空并显示空态
+  Future<void> _refreshAll() async {
+    if (_refreshing) return;
+    setState(() {
+      _refreshing = true;
+      _loadFailed = false;
+    });
+    bool ok = true;
+    Future<void> safeCall(Future<void> Function() fn) async {
+      try {
+        await _runWithRetry(fn, maxAttempts: 2);
+      } catch (_) {
+        ok = false;
+      }
+    }
+    await safeCall(_loadUserInfo);
+    await safeCall(_loadActivities);
+    await safeCall(_loadPhotos);
+    if (!mounted) return;
+    if (!ok) {
+      // 清空当前页面数据并显示空态
+      setState(() {
+        _displayName = '暂无数据';
+        _signature = '暂无数据';
+        _avatarUrl = null;
+        _backgroundUrl = null;
+        _sessions = [];
+        _allSessions = [];
+        _photoUrls = [];
+        _statsData = [];
+        _totalDistance = 0;
+        _totalAscent = 0;
+        _totalDescent = 0;
+        _loadFailed = true;
+        _refreshing = false;
+      });
+    } else {
+      setState(() {
+        _refreshing = false;
+      });
+    }
+  }
+
+  /// 带重试的包装（用于刷新流程）
+  Future<void> _runWithRetry(Future<void> Function() fn, {int maxAttempts = 2}) async {
+    int attempt = 0;
+    while (true) {
+      try {
+        attempt += 1;
+        await fn();
+        return;
+      } catch (e) {
+        if (attempt >= maxAttempts) rethrow;
+        await Future.delayed(const Duration(milliseconds: 300));
+      }
+    }
+  }
+
+  /// 默认空态页（失败后展示）：图标 + 文案 + 重试按钮
+  Widget _buildEmptyState() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 24),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.inbox, size: 48, color: Colors.grey.shade500),
+            const SizedBox(height: 8),
+            const Text('暂无数据', style: TextStyle(color: Colors.black54)),
+            const SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: () => _refreshAll(),
+              icon: const Icon(Icons.refresh),
+              label: const Text('重试'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -153,20 +245,77 @@ class _UserProfilePageState extends State<UserProfilePage> {
         title: const Text('个人主页'),
         actions: [
           IconButton(icon: const Icon(Icons.info_outline), onPressed: _showFeatureHint),
+          // 主动刷新：触发完整数据请求流程（失败显示空态）
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _refreshAll,
+            tooltip: '刷新',
+          ),
           // 前端上传入口（Web 平台）
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
             onPressed: _uploadPhoto,
             tooltip: '上传照片',
           ),
+          // 在线/离线状态指示器（AppBar 右上角）
+          ValueListenableBuilder<bool>(
+            valueListenable: OfflineModeManager.instance.isOffline,
+            builder: (context, offline, _) {
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Tooltip(
+                  message: offline ? '当前：离线模式' : '当前：在线模式',
+                  child: Icon(
+                    offline ? Icons.cloud_off : Icons.cloud_queue,
+                    color: offline ? Colors.orange : Colors.green,
+                  ),
+                ),
+              );
+            },
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: RefreshAndEmpty(
+        isEmpty: _loadFailed,
+        onRefresh: () async {
+          try {
+            await _refreshAll();
+            return true;
+          } catch (_) {
+            return false;
+          }
+        },
+        emptyIcon: Icons.person,
+        emptyTitle: '暂无数据',
+        emptySubtitle: '下拉刷新重试加载个人信息与动态',
+        emptyActionText: null,
+        onEmptyAction: null,
+        child: SingleChildScrollView(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+            // 顶部离线提示条：明确区分本地缓存与在线模式显示
+            ValueListenableBuilder<bool>(
+              valueListenable: OfflineModeManager.instance.isOffline,
+              builder: (context, offline, _) {
+                if (!offline) return const SizedBox.shrink();
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    '离线模式：后端不可用或未连接，所有操作仅缓存在本地',
+                    style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
             // 背景图区域：优先显示用户背景图；否则使用淡色占位
             Container(
               height: 140,
@@ -206,6 +355,26 @@ class _UserProfilePageState extends State<UserProfilePage> {
                         Text(_displayName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
                         const SizedBox(height: 6),
                         Text(_signature, style: const TextStyle(color: Colors.black87)),
+                        const SizedBox(height: 8),
+                        // 状态指示器 Chip：显示当前在线/离线
+                        ValueListenableBuilder<bool>(
+                          valueListenable: OfflineModeManager.instance.isOffline,
+                          builder: (context, offline, _) {
+                            return Align(
+                              alignment: Alignment.centerLeft,
+                              child: Chip(
+                                avatar: Icon(
+                                  offline ? Icons.cloud_off : Icons.cloud_queue,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                                label: Text(offline ? '离线模式' : '在线模式'),
+                                backgroundColor: offline ? Colors.orange : Colors.green,
+                                labelStyle: const TextStyle(color: Colors.white),
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),
@@ -213,6 +382,155 @@ class _UserProfilePageState extends State<UserProfilePage> {
               ),
             ),
             const SizedBox(height: 12),
+            // 版本切换控件：在线/离线切换，切换时进行一致性检查
+            SectionCard(
+              title: '运行模式',
+              children: [
+                ValueListenableBuilder<bool>(
+                  valueListenable: OfflineModeManager.instance.isOffline,
+                  builder: (context, offline, _) {
+                    return SwitchListTile(
+                      title: Text(offline ? '当前：离线（本地存储）' : '当前：在线（连接后端）'),
+                      subtitle: const Text('切换将进行数据一致性检查'),
+                      value: offline,
+                      onChanged: (val) async {
+                        bool ok = true;
+                        bool switched = false;
+                        if (val) {
+                          // 切到离线：先保存关键数据快照
+                          ok = await SnapshotService.instance.saveBeforeOfflineSwitch();
+                          if (ok) {
+                            switched = await OfflineModeManager.instance.setOffline(true);
+                          }
+                        } else {
+                          // 切到在线：先进行后端健康检查（3秒超时）
+                          final healthy = await HealthCheckService.instance.checkAvailable();
+                          if (!healthy) {
+                            // 友好提示 + 确认对话框
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('后端服务当前不可用'), backgroundColor: Colors.orange),
+                              );
+                            }
+                            final continueSwitch = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title: const Text('后端服务不可用'),
+                                content: const Text('检测到后端服务不可用，是否仍要继续切换到在线模式？'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: const Text('取消'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: const Text('继续切换'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (continueSwitch == true) {
+                              // 用户仍要继续：保持离线状态不变，顶部显示离线提示条，数据仅缓存在本地
+                              await OfflineModeManager.instance.setOffline(true);
+                              ok = true; // 流程成功，但实际保持离线
+                              switched = false;
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('已保持离线，操作将缓存在本地'), backgroundColor: Colors.blue),
+                                );
+                              }
+                            } else {
+                              // 用户取消：保持当前离线状态
+                              ok = true;
+                              switched = false;
+                            }
+                          } else {
+                            // 健康检查通过：执行一致性检查并切换到在线，随后触发手动同步
+                            ok = await SyncService.instance.ensureConsistencyBeforeSwitch(toOffline: false);
+                            switched = await OfflineModeManager.instance.setOffline(false);
+                            if (switched) {
+                              await SyncService.instance.triggerManualSync();
+                            }
+                          }
+                        }
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              (ok && switched)
+                                  ? (val ? '已保存并切换到离线模式' : '已切换到在线模式并同步')
+                                  : '切换失败，请稍后重试',
+                            ),
+                            backgroundColor: (ok && switched) ? Colors.blue : Colors.red,
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+                const SizedBox(height: 8),
+                // 同步进度显示：订阅 SyncService 状态流
+                StreamBuilder<Map<String, dynamic>>(
+                  stream: SyncService.instance.statusStream,
+                  builder: (context, snap) {
+                    final data = snap.data ?? const {'state': 'idle'};
+                    final state = (data['state'] ?? 'idle').toString();
+                    if (state == 'running') {
+                      final p = (data['progress'] as num?)?.toDouble() ?? 0.0;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('同步进行中...'),
+                          const SizedBox(height: 6),
+                          LinearProgressIndicator(value: p),
+                        ],
+                      );
+                    }
+                    if (state == 'done') {
+                      final count = data['count'] ?? 0;
+                      return Text('同步完成：$count 项');
+                    }
+                    if (state == 'error') {
+                      final msg = data['message']?.toString() ?? '未知错误';
+                      return Text('同步失败：$msg', style: const TextStyle(color: Colors.red));
+                    }
+                    if (state == 'skipped') {
+                      return const Text('离线中：变更将暂存本地，恢复后自动同步');
+                    }
+                    return const Text('同步空闲');
+                  },
+                ),
+                const SizedBox(height: 8),
+                // 离线切换前保存进度：订阅 SnapshotService 状态流
+                StreamBuilder<Map<String, dynamic>>(
+                  stream: SnapshotService.instance.statusStream,
+                  builder: (context, snap) {
+                    final data = snap.data ?? const {'state': 'idle'};
+                    final state = (data['state'] ?? 'idle').toString();
+                    if (state == 'saving') {
+                      final p = (data['progress'] as num?)?.toDouble() ?? 0.0;
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('正在保存关键数据...'),
+                          const SizedBox(height: 6),
+                          LinearProgressIndicator(value: p),
+                        ],
+                      );
+                    }
+                    if (state == 'done') {
+                      final count = data['count'] ?? 0;
+                      return Text('离线切换前保存完成：$count 项');
+                    }
+                    if (state == 'error') {
+                      final msg = data['message']?.toString() ?? '未知错误';
+                      return Text('保存失败：$msg', style: const TextStyle(color: Colors.red));
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
             _PhotoWall(photos: _photoUrls),
             const SizedBox(height: 10),
             const Divider(height: 1),
@@ -233,7 +551,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
               onLoadMore: _loadMoreSessions,
               loadingMore: _loadingMore,
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );

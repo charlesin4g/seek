@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'offline_mode.dart';
 import 'env.dart'; // 从 Env 读取后端地址配置
 
 class HttpClient {
@@ -32,10 +33,16 @@ class HttpClient {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    final res = await _client
-        .get(_uri(path), headers: {...defaultHeaders, ...?headers})
-        .timeout(timeout);
-    return _decodeJsonOrThrow(res, 'GET', path);
+    try {
+      final res = await _client
+          .get(_uri(path), headers: {...defaultHeaders, ...?headers})
+          .timeout(timeout);
+      return _decodeJsonOrThrow(res, 'GET', path);
+    } catch (e) {
+      // 网络异常：自动切换离线
+      await OfflineModeManager.instance.setOffline(true);
+      rethrow;
+    }
   }
 
   Future<String> postJson(
@@ -44,14 +51,19 @@ class HttpClient {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    final res = await _client
-        .post(
-          _uri(path),
-          headers: {...defaultHeaders, ...?headers},
-          body: body == null ? null : jsonEncode(body),
-        )
-        .timeout(timeout);
-    return _decodeJsonOrThrow(res, 'POST', path);
+    try {
+      final res = await _client
+          .post(
+            _uri(path),
+            headers: {...defaultHeaders, ...?headers},
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(timeout);
+      return _decodeJsonOrThrow(res, 'POST', path);
+    } catch (e) {
+      await OfflineModeManager.instance.setOffline(true);
+      rethrow;
+    }
   }
 
   Future<String> putJson(
@@ -60,14 +72,19 @@ class HttpClient {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    final res = await _client
-        .put(
-          _uri(path),
-          headers: {...defaultHeaders, ...?headers},
-          body: body == null ? null : jsonEncode(body),
-        )
-        .timeout(timeout);
-    return _decodeJsonOrThrow(res, 'PUT', path);
+    try {
+      final res = await _client
+          .put(
+            _uri(path),
+            headers: {...defaultHeaders, ...?headers},
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(timeout);
+      return _decodeJsonOrThrow(res, 'PUT', path);
+    } catch (e) {
+      await OfflineModeManager.instance.setOffline(true);
+      rethrow;
+    }
   }
 
   Future<String> deleteJson(
@@ -76,14 +93,19 @@ class HttpClient {
     Map<String, String>? headers,
     Duration timeout = const Duration(seconds: 10),
   }) async {
-    final res = await _client
-        .delete(
-          _uri(path),
-          headers: {...defaultHeaders, ...?headers},
-          body: body == null ? null : jsonEncode(body),
-        )
-        .timeout(timeout);
-    return _decodeJsonOrThrow(res, 'DELETE', path);
+    try {
+      final res = await _client
+          .delete(
+            _uri(path),
+            headers: {...defaultHeaders, ...?headers},
+            body: body == null ? null : jsonEncode(body),
+          )
+          .timeout(timeout);
+      return _decodeJsonOrThrow(res, 'DELETE', path);
+    } catch (e) {
+      await OfflineModeManager.instance.setOffline(true);
+      rethrow;
+    }
   }
 
   String _decodeJsonOrThrow(http.Response res, String method, String path) {
