@@ -9,7 +9,6 @@ import 'add_gear_page.dart';
 import 'select_gear_page.dart';
 import '../login_page.dart';
 import '../../widgets/refresh_and_empty.dart';
-import '../../widgets/empty_state.dart';
 
 class GearPage extends StatefulWidget {
   const GearPage({super.key});

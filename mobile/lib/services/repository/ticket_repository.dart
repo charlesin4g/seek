@@ -16,7 +16,7 @@ class TicketRepository {
     if (kIsWeb) {
       return WebLocalStore.instance.addTicket(data);
     }
-    final db = await LocalDatabase.instance.init();
+    await LocalDatabase.instance.init();
     final id = data['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
     final row = {
       'id': id,

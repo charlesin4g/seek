@@ -1,8 +1,12 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# Define a global iOS platform to avoid implicit assignment warnings
+platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+# Use Tsinghua mirror to avoid GitHub connectivity issues
+# source 'https://cdn.cocoapods.org/'
+source 'https://mirrors.tuna.tsinghua.edu.cn/git/CocoaPods/Specs.git'
 
 project 'Runner', {
   'Debug' => :debug,

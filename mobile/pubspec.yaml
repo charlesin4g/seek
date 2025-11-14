@@ -39,6 +39,8 @@ dependencies:
   crypto: ^3.0.3
   path: ^1.9.0
   sqflite_sqlcipher: ^3.4.0
+  # Added for web DOM/JS interop used in web_local_store_web.dart
+  web: any
 
 dev_dependencies:
   flutter_test:

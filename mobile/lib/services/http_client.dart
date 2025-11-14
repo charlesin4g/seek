@@ -3,6 +3,22 @@ import 'package:http/http.dart' as http;
 import 'offline_mode.dart';
 import 'env.dart'; // 从 Env 读取后端地址配置
 
+/// 统一异常类，方便上层区分处理
+class ApiException implements Exception {
+  final int statusCode;
+  final String message;
+  final String path;
+
+  ApiException({
+    required this.statusCode,
+    required this.message,
+    required this.path,
+  });
+
+  @override
+  String toString() => 'ApiException($statusCode, $message, $path)';
+}
+
 class HttpClient {
   final String localBaseUrl = 'http://127.0.0.1:8080';
   final String localAreaBaseUrl = 'http://172.16.115.42:8080';
@@ -108,14 +124,28 @@ class HttpClient {
     }
   }
 
+  /// 统一错误体解析
   String _decodeJsonOrThrow(http.Response res, String method, String path) {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       if (res.body.isEmpty) return '';
       return res.body;
     }
-    throw Exception(
-      'HTTP ${res.statusCode} when $method $path: ${res.reasonPhrase}',
-    );
+    // 尝试解析统一错误体
+    try {
+      final map = jsonDecode(res.body) as Map<String, dynamic>;
+      throw ApiException(
+        statusCode: res.statusCode,
+        message: map['message'] ?? 'Unknown error',
+        path: path,
+      );
+    } catch (_) {
+      // 解析失败则降级
+      throw ApiException(
+        statusCode: res.statusCode,
+        message: res.reasonPhrase ?? 'Unknown error',
+        path: path,
+      );
+    }
   }
 
   void close() => _client.close();

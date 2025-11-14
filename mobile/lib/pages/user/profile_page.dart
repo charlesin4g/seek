@@ -17,7 +17,6 @@ import '../../services/network_probe_service.dart';
 import '../../services/snapshot_service.dart';
 import '../../services/health_check_service.dart';
 import '../../widgets/refresh_and_empty.dart';
-import '../../widgets/empty_state.dart';
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -214,28 +213,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         await Future.delayed(const Duration(milliseconds: 300));
       }
     }
-  }
-
-  /// 默认空态页（失败后展示）：图标 + 文案 + 重试按钮
-  Widget _buildEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      child: Center(
-        child: Column(
-          children: [
-            Icon(Icons.inbox, size: 48, color: Colors.grey.shade500),
-            const SizedBox(height: 8),
-            const Text('暂无数据', style: TextStyle(color: Colors.black54)),
-            const SizedBox(height: 10),
-            ElevatedButton.icon(
-              onPressed: () => _refreshAll(),
-              icon: const Icon(Icons.refresh),
-              label: const Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   @override

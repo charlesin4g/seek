@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:html' as html;
+import 'package:web/web.dart' as html;
 
 /// Web 平台实现：使用 localStorage 持久化
 class WebLocalStore {

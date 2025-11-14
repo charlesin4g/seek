@@ -5,7 +5,6 @@ import '../../models/ticket.dart';
 import 'add_ticket_page.dart';
 import 'edit_ticket_page.dart';
 import '../../widgets/refresh_and_empty.dart';
-import '../../widgets/empty_state.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({super.key});
