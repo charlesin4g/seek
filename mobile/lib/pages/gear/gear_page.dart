@@ -9,6 +9,9 @@ import 'add_gear_page.dart';
 import 'select_gear_page.dart';
 import '../login_page.dart';
 import '../../widgets/refresh_and_empty.dart';
+import '../../widgets/gear/improved_gear_table.dart';
+import '../../config/app_colors.dart';
+import '../../utils/responsive.dart';
 
 class GearPage extends StatefulWidget {
   const GearPage({super.key});
@@ -25,16 +28,13 @@ class _GearPageState extends State<GearPage> {
 
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFE3F2FD), Color(0xFFF8F9FA)],
-        ),
+        gradient: AppColors.backgroundGradient, // 使用新的渐变背景
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: Colors.transparent,
+          backgroundColor: AppColors.primaryLightBlue, // 使用浅蓝色背景
+          foregroundColor: AppColors.textPrimary, // 文字颜色
           elevation: 0,
           title: Row(
             children: [
@@ -42,21 +42,21 @@ class _GearPageState extends State<GearPage> {
                 width: 32,
                 height: 32,
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade100,
+                  gradient: AppColors.primaryGradient, // 使用主色调渐变
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.hiking, color: Colors.blue),
+                child: const Icon(Icons.hiking, color: Colors.white),
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     '徒步装备',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: AppFontSizes.title, // 20px
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   FutureBuilder<Map<String, dynamic>?>(
@@ -68,8 +68,8 @@ class _GearPageState extends State<GearPage> {
                       return Text(
                         '管理员: $name',
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.blueGrey.shade600,
+                          fontSize: AppFontSizes.body - 2, // 12px
+                          color: AppColors.textSecondary,
                         ),
                       );
                     },
@@ -80,7 +80,7 @@ class _GearPageState extends State<GearPage> {
           ),
           actions: [
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
               onSelected: (value) async {
                 if (value == 'logout') {
                   await AuthService().logout();
@@ -95,14 +95,20 @@ class _GearPageState extends State<GearPage> {
                   }
                 }
               },
-              itemBuilder: (context) => const [
+              itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'logout',
                   child: Row(
                     children: [
-                      Icon(Icons.logout, color: Colors.red),
-                      SizedBox(width: 8),
-                      Text('退出登录'),
+                      Icon(Icons.logout, color: AppColors.error),
+                      const SizedBox(width: 8),
+                      Text(
+                        '退出登录',
+                        style: TextStyle(
+                          color: AppColors.textPrimary,
+                          fontSize: AppFontSizes.body,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -189,17 +195,17 @@ class _GearPageState extends State<GearPage> {
               emptyActionText: null,
               onEmptyAction: null,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
+                padding: Responsive.responsivePadding(context).copyWith(bottom: 140),
                 child: Column(
                   children: [
                     _buildSummaryCard(stats),
                     const SizedBox(height: 16),
                     ...grouped.entries.expand(
                       (entry) => [
-                        _buildGearTableCard(
-                          categoryDict[entry.key] ?? entry.key,
-                          entry.value,
-                          brandDict,
+                        ImprovedGearTable(
+                          category: categoryDict[entry.key] ?? entry.key,
+                          data: entry.value,
+                          brandDict: brandDict,
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -225,7 +231,7 @@ class _GearPageState extends State<GearPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             FloatingActionButton(
-              backgroundColor: Colors.blue,
+              backgroundColor: AppColors.primaryBlue,
               heroTag: 'fab-edit',
               child: const Icon(Icons.edit, color: Colors.white),
               onPressed: () async {
@@ -242,7 +248,7 @@ class _GearPageState extends State<GearPage> {
             ),
             const SizedBox(height: 12),
             FloatingActionButton(
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.secondaryGreen,
               heroTag: 'fab-add',
               child: const Icon(Icons.add, color: Colors.white),
               onPressed: () async {
@@ -288,14 +294,20 @@ class _GearPageState extends State<GearPage> {
       children: [
         Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: Colors.blue,
+            color: AppColors.primaryDarkBlue,
           ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(
+          label, 
+          style: TextStyle(
+            fontSize: 12, 
+            color: AppColors.textSecondary,
+          ),
+        ),
       ],
     );
   }
@@ -460,118 +472,118 @@ class _GearPageState extends State<GearPage> {
     );
   }
 
-  /// 装备分类表，按装备类别进行分类并分别展示
-  Widget _buildGearTableCard(String category, List<Gear> data, Map<String, String> brandDict) {
-    return SectionCard(
-      title: category,
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Table(
-            columnWidths: const {
-              0: IntrinsicColumnWidth(),
-              1: FixedColumnWidth(72),
-              2: FixedColumnWidth(100),
-              3: FixedColumnWidth(100),
-              4: FixedColumnWidth(100),
-            },
-            children: [
-              const TableRow(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 8, bottom: 8, right: 12),
-                    child: Text(
-                      '装备名字',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      '数目',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      '重量 (g)',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      '价格',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
-                    child: Text(
-                      '购入时间',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
-              ),
-              ...data.map(
-                (item) => TableRow(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8, bottom: 8, right: 12),
-                      child: Text(
-                        '${brandDict[item.brand] ?? item.brand} ${item.name}',
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.visible,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        item.quantity.toString(),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        item.weight.toString(),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        item.price.toString(),
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        '${(item.purchaseDate.year % 100).toString().padLeft(2, '0')}-${item.purchaseDate.month.toString().padLeft(2, '0')}',
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  /// 装备分类表，按装备类别进行分类并分别展示 - 已废弃，使用ImprovedGearTable替代
+  // Widget _buildGearTableCard(String category, List<Gear> data, Map<String, String> brandDict) {
+  //   return SectionCard(
+  //     title: category,
+  //     children: [
+  //       SingleChildScrollView(
+  //         scrollDirection: Axis.horizontal,
+  //         child: Table(
+  //           columnWidths: const {
+  //             0: IntrinsicColumnWidth(),
+  //             1: FixedColumnWidth(72),
+  //             2: FixedColumnWidth(100),
+  //             3: FixedColumnWidth(100),
+  //             4: FixedColumnWidth(100),
+  //           },
+  //           children: [
+  //             const TableRow(
+  //               children: [
+  //                 Padding(
+  //                   padding: EdgeInsets.only(top: 8, bottom: 8, right: 12),
+  //                   child: Text(
+  //                     '装备名字',
+  //                     style: TextStyle(fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.symmetric(vertical: 8),
+  //                   child: Text(
+  //                     '数目',
+  //                     style: TextStyle(fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.symmetric(vertical: 8),
+  //                   child: Text(
+  //                     '重量 (g)',
+  //                     style: TextStyle(fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.symmetric(vertical: 8),
+  //                   child: Text(
+  //                     '价格',
+  //                     style: TextStyle(fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //                 Padding(
+  //                   padding: EdgeInsets.symmetric(vertical: 8),
+  //                   child: Text(
+  //                     '购入时间',
+  //                     style: TextStyle(fontWeight: FontWeight.bold),
+  //                   ),
+  //                 ),
+  //               ],
+  //             ),
+  //             ...data.map(
+  //               (item) => TableRow(
+  //                 children: [
+  //                   Padding(
+  //                     padding: const EdgeInsets.only(top: 8, bottom: 8, right: 12),
+  //                     child: Text(
+  //                       '${brandDict[item.brand] ?? item.brand} ${item.name}',
+  //                       maxLines: 1,
+  //                       softWrap: false,
+  //                       overflow: TextOverflow.visible,
+  //                     ),
+  //                   ),
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(vertical: 8),
+  //                     child: Text(
+  //                       item.quantity.toString(),
+  //                       maxLines: 1,
+  //                       softWrap: false,
+  //                       overflow: TextOverflow.ellipsis,
+  //                     ),
+  //                   ),
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(vertical: 8),
+  //                     child: Text(
+  //                       item.weight.toString(),
+  //                       maxLines: 1,
+  //                       softWrap: false,
+  //                       overflow: TextOverflow.ellipsis,
+  //                     ),
+  //                   ),
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(vertical: 8),
+  //                     child: Text(
+  //                       item.price.toString(),
+  //                       maxLines: 1,
+  //                       softWrap: false,
+  //                       overflow: TextOverflow.ellipsis,
+  //                     ),
+  //                   ),
+  //                   Padding(
+  //                     padding: const EdgeInsets.symmetric(vertical: 8),
+  //                     child: Text(
+  //                       '${(item.purchaseDate.year % 100).toString().padLeft(2, '0')}-${item.purchaseDate.month.toString().padLeft(2, '0')}',
+  //                       maxLines: 1,
+  //                       softWrap: false,
+  //                       overflow: TextOverflow.ellipsis,
+  //                     ),
+  //                   ),
+  //                 ],
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
 
   DateTime _parsePurchaseDate(String s) {
     final parts = s.split('-');

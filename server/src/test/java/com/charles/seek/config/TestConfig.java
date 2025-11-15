@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Bean;
 @TestConfiguration
 public class TestConfig {
 
-    @Bean
+    @Bean(name = "testModelMapper")
     public ModelMapper modelMapper() {
         return new ModelMapper();
     }

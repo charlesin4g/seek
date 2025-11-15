@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:your_app/services/user_api.dart';
+import 'package:mobile/services/user_api.dart';
 
 /// 手动验证脚本：注册-登录-更新-删除完整流程
 void main() async {

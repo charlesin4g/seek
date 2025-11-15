@@ -23,9 +23,13 @@ class HealthCheckService {
     final uri = Uri.parse('${Env.backendBaseUrl}/health/check');
     try {
       final res = await _client.get(uri).timeout(timeout);
-      // 2xx 认为可用，其它视为不可用
+      // 2xx 认为可用；503 健康检查未通过也视为不可用
+      if (res.statusCode == 503) {
+        print('Health check returned 503, backend dependencies unhealthy');
+      }
       return res.statusCode >= 200 && res.statusCode < 300;
-    } catch (_) {
+    } catch (e) {
+      print('Health check error: $e');
       return false;
     }
   }

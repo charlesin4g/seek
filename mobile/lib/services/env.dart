@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io' show Platform;
 
 /// 应用环境配置项
 ///
@@ -18,6 +19,14 @@ class Env {
     defaultValue: 'http://127.0.0.1:8080',
   );
 
-  /// 根据平台返回后端基础地址（Web/非 Web）
-  static String get backendBaseUrl => apiBaseUrl;
+  /// 根据平台返回后端基础地址（Web/非 Web），自动适配模拟器与真机默认值
+  /// 优先使用 `API_BASE_URL`，否则：
+  /// - Web/iOS/macOS/windows/linux 默认 `127.0.0.1:8080`
+  /// - Android 模拟器默认 `10.0.2.2:8080`
+  static String get backendBaseUrl {
+    if (apiBaseUrl.isNotEmpty) return apiBaseUrl;
+    if (kIsWeb) return 'http://127.0.0.1:8080';
+    if (Platform.isAndroid) return 'http://10.0.2.2:8080';
+    return 'http://127.0.0.1:8080';
+  }
 }

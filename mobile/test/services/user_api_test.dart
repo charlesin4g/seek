@@ -1,30 +1,39 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-import 'package:your_app/services/http_client.dart';
-import 'package:your_app/services/user_api.dart';
+import 'package:mobile/services/http_client.dart';
+import 'package:mobile/services/user_api.dart';
 
-import 'user_api_test.mocks.dart';
+class FakeClient extends http.BaseClient {
+  final http.Response? Function(String method, Uri url, {Map<String, String>? headers, Object? body}) handler;
+  FakeClient(this.handler);
 
-@GenerateNiceMocks([MockSpec<http.Client>()])
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final body = request is http.Request ? request.body : null;
+    final res = handler(request.method, request.url, headers: request.headers, body: body);
+    if (res == null) throw Exception('SocketException');
+    final stream = Stream<List<int>>.fromIterable([utf8.encode(res.body)]);
+    return http.StreamedResponse(stream, res.statusCode, headers: res.headers, reasonPhrase: res.reasonPhrase);
+  }
+}
 void main() {
   group('UserApi 错误处理与重试', () {
-    late MockClient mockHttp;
+    late FakeClient mockHttp;
     late HttpClient httpClient;
     late UserApi userApi;
 
     setUp(() {
-      mockHttp = MockClient();
+      mockHttp = FakeClient((method, url, {headers, body}) => http.Response('{}', 200));
       httpClient = HttpClient(client: mockHttp);
       userApi = UserApi(client: httpClient);
     });
 
     test('404 抛出 UserNotFoundException', () async {
-      when(mockHttp.get(any, headers: anyNamed('headers')))
-          .thenAnswer((_) async => http.Response('{"message":"用户不存在"}', 404));
+      mockHttp = FakeClient((method, url, {headers, body}) => http.Response.bytes(utf8.encode('{"message":"用户不存在"}'), 404, headers: {'content-type': 'application/json; charset=utf-8'}));
+      httpClient = HttpClient(client: mockHttp);
+      userApi = UserApi(client: httpClient);
 
       expect(
         () => userApi.getUserByUsername('notfound'),
@@ -33,8 +42,9 @@ void main() {
     });
 
     test('409 抛出 ConflictException', () async {
-      when(mockHttp.post(any, headers: anyNamed('headers'), body: anyNamed('body')))
-          .thenAnswer((_) async => http.Response('{"message":"用户名已存在"}', 409));
+      mockHttp = FakeClient((method, url, {headers, body}) => http.Response.bytes(utf8.encode('{"message":"用户名已存在"}'), 409, headers: {'content-type': 'application/json; charset=utf-8'}));
+      httpClient = HttpClient(client: mockHttp);
+      userApi = UserApi(client: httpClient);
 
       expect(
         () => userApi.createUser({'username': 'dup'}),
@@ -43,8 +53,9 @@ void main() {
     });
 
     test('500 抛出 ServerException', () async {
-      when(mockHttp.put(any, headers: anyNamed('headers'), body: anyNamed('body')))
-          .thenAnswer((_) async => http.Response('{"message":"服务器内部错误"}', 500));
+      mockHttp = FakeClient((method, url, {headers, body}) => http.Response.bytes(utf8.encode('{"message":"服务器内部错误"}'), 500, headers: {'content-type': 'application/json; charset=utf-8'}));
+      httpClient = HttpClient(client: mockHttp);
+      userApi = UserApi(client: httpClient);
 
       expect(
         () => userApi.updateUser('user', {'displayName': 'New'}),
@@ -53,18 +64,26 @@ void main() {
     });
 
     test('网络异常触发重试，最终成功', () async {
-      // 第一次失败，第二次成功
-      when(mockHttp.post(any, headers: anyNamed('headers'), body: anyNamed('body')))
-          .thenAnswer((_) async => throw Exception('SocketException'))
-          .thenAnswer((_) async => http.Response('{"username":"alice"}', 201));
+      int call = 0;
+      mockHttp = FakeClient((method, url, {headers, body}) {
+        if (method == 'POST') {
+          call++;
+          if (call == 1) return null;
+          return http.Response('{"username":"alice"}', 201);
+        }
+        return http.Response('{}', 200);
+      });
+      httpClient = HttpClient(client: mockHttp);
+      userApi = UserApi(client: httpClient);
 
       final res = await userApi.createUser({'username': 'alice'});
       expect(res['username'], 'alice');
     });
 
     test('重试 3 次仍失败则抛出原始异常', () async {
-      when(mockHttp.post(any, headers: anyNamed('headers'), body: anyNamed('body')))
-          .thenThrow(Exception('SocketException'));
+      mockHttp = FakeClient((method, url, {headers, body}) => null);
+      httpClient = HttpClient(client: mockHttp);
+      userApi = UserApi(client: httpClient);
 
       expect(
         () => userApi.createUser({'username': 'alice'}),

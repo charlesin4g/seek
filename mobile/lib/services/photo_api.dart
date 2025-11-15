@@ -12,7 +12,7 @@ class PhotoApi {
   final HttpClient _client;
 
   /// 获取当前用户的照片墙（按创建时间倒序）
-  Future<List<String>> getMyPhotos() async {
+  Future<List<String>> getMyPhotos({Duration timeout = const Duration(seconds: 3)}) async {
     final cached = StorageService().getCachedUserSync();
     String owner = cached?['userId']?.toString() ?? '1';
     if (cached == null) {
@@ -23,7 +23,7 @@ class PhotoApi {
       }
     }
 
-    final raw = await _client.getJson('/api/photo/owner/$owner');
+    final raw = await _client.getJson('/api/photo/owner/$owner', timeout: timeout);
     final decoded = jsonDecode(raw) as List;
     // 后端返回 UserPhotoItem 列表，取 url 字段作为图片地址
     return decoded

@@ -69,7 +69,7 @@ public class GearController {
      * 修改装备
      */
     @PostMapping("/edit")
-    public ResponseEntity<List<QueryGearListResponse>> editGear(@RequestParam Long gearId, @RequestBody EditGearRequest gear) {
+    public ResponseEntity<List<QueryGearListResponse>> editGear(@RequestParam("gearId") Long gearId, @RequestBody EditGearRequest gear) {
         return new ResponseEntity<>(gearService.editGear(gearId,gear), HttpStatus.OK);
     }
 }

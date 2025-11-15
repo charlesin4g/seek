@@ -12,11 +12,13 @@ import '../../utils/upload_helper_stub.dart'
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../../services/offline_mode.dart';
-import '../../services/sync_service.dart';
 import '../../services/network_probe_service.dart';
-import '../../services/snapshot_service.dart';
 import '../../services/health_check_service.dart';
 import '../../widgets/refresh_and_empty.dart';
+import '../../config/app_colors.dart';
+import '../../widgets/security_icons.dart';
+import '../../utils/responsive.dart';
+
 
 class UserProfilePage extends StatefulWidget {
   const UserProfilePage({super.key});
@@ -114,7 +116,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
     _loadPhotos();
     _scrollController.addListener(_onScroll);
     // 启动网络探测服务：离线时自动探测并在恢复后触发同步
-    NetworkProbeService.instance.start();
+  NetworkProbeService.instance.start();
   }
 
    @override
@@ -135,8 +137,46 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
+  Future<bool> _verifyPhotosReachable(List<String> urls, {int sample = 3}) async {
+    final client = http.Client();
+    try {
+      final candidates = urls.take(sample).toList();
+      for (final u in candidates) {
+        final resolved = OssService().resolvePrivateUrl(u);
+        if (resolved == null || resolved.isEmpty) continue;
+        try {
+          final res = await client.head(Uri.parse(resolved)).timeout(const Duration(seconds: 3));
+          if (res.statusCode >= 200 && res.statusCode < 400) {
+            return true;
+          }
+        } catch (e) {
+          if (!kReleaseMode) debugPrint('Photo HEAD failed: $e');
+        }
+      }
+      return false;
+    } finally {
+      client.close();
+    }
+  }
+
   void _generateDataForScope(String scope) {
     _buildStatsForScope(scope);
+  }
+
+  Future<bool> _canLoadImageUrl(String? url, {Duration timeout = const Duration(seconds: 3)}) async {
+    if (url == null || url.isEmpty) return false;
+    try {
+      final client = http.Client();
+      try {
+        final res = await client.head(Uri.parse(url)).timeout(timeout);
+        return res.statusCode >= 200 && res.statusCode < 400;
+      } finally {
+        client.close();
+      }
+    } catch (e) {
+      debugPrint('Image load failed: $e');
+      return false;
+    }
   }
 
   void _recomputeTotals() {
@@ -220,19 +260,43 @@ class _UserProfilePageState extends State<UserProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('个人主页'),
+        backgroundColor: AppColors.primaryLightBlue, // 浅蓝色背景
+        foregroundColor: AppColors.textPrimary, // 文字颜色
+        elevation: 0, // 移除阴影
+        centerTitle: true, // 居中标题
+        titleTextStyle: TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: AppFontSizes.title, // 20px
+          fontWeight: FontWeight.w600,
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.info_outline), onPressed: _showFeatureHint),
+          IconButton(
+            icon: const Icon(Icons.info_outline), 
+            onPressed: _showFeatureHint,
+            color: AppColors.textPrimary,
+          ),
           // 主动刷新：触发完整数据请求流程（失败显示空态）
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _refreshAll,
             tooltip: '刷新',
+            color: AppColors.textPrimary,
           ),
           // 前端上传入口（Web 平台）
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
             onPressed: _uploadPhoto,
             tooltip: '上传照片',
+            color: AppColors.textPrimary,
+          ),
+          // 安全提示图标
+          const Padding(
+            padding: EdgeInsets.only(right: 8),
+            child: SecurityIcon(
+              icon: Icons.security,
+              tooltip: '个人信息安全保护',
+              color: AppColors.primaryDarkBlue,
+            ),
           ),
           // 在线/离线状态指示器（AppBar 右上角）
           ValueListenableBuilder<bool>(
@@ -244,7 +308,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   message: offline ? '当前：离线模式' : '当前：在线模式',
                   child: Icon(
                     offline ? Icons.cloud_off : Icons.cloud_queue,
-                    color: offline ? Colors.orange : Colors.green,
+                    color: offline ? AppColors.textSecondary : AppColors.primaryDarkBlue,
                   ),
                 ),
               );
@@ -252,27 +316,37 @@ class _UserProfilePageState extends State<UserProfilePage> {
           ),
         ],
       ),
-      body: RefreshAndEmpty(
-        isEmpty: _loadFailed,
-        onRefresh: () async {
-          try {
-            await _refreshAll();
-            return true;
-          } catch (_) {
-            return false;
-          }
-        },
-        emptyIcon: Icons.person,
-        emptyTitle: '暂无数据',
-        emptySubtitle: '下拉刷新重试加载个人信息与动态',
-        emptyActionText: null,
-        onEmptyAction: null,
-        child: SingleChildScrollView(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: AppColors.backgroundGradient, // 使用渐变背景
+                boxShadow: [AppShadows.light], // 添加柔和阴影
+              ),
+            ),
+          ),
+          RefreshAndEmpty(
+          isEmpty: _loadFailed,
+          onRefresh: () async {
+            try {
+              await _refreshAll();
+              return true;
+            } catch (_) {
+              return false;
+            }
+          },
+          emptyIcon: Icons.person,
+          emptyTitle: '暂无数据',
+          emptySubtitle: '下拉刷新重试加载个人信息与动态',
+          emptyActionText: null,
+          onEmptyAction: null,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            padding: Responsive.responsivePadding(context), // 使用响应式间距
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             // 顶部离线提示条：明确区分本地缓存与在线模式显示
             ValueListenableBuilder<bool>(
               valueListenable: OfflineModeManager.instance.isOffline,
@@ -280,59 +354,90 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 if (!offline) return const SizedBox.shrink();
                 return Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: Responsive.responsivePadding(context), // 使用响应式间距
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade100,
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.warning.withOpacity(0.1), // 使用统一的警告色
+                    borderRadius: AppBorderRadius.large, // 使用统一圆角
+                    border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    boxShadow: [AppShadows.light], // 添加柔和阴影
                   ),
-                  child: const Text(
-                    '离线模式：后端不可用或未连接，所有操作仅缓存在本地',
-                    style: TextStyle(color: Colors.orange, fontWeight: FontWeight.w600),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: AppColors.warning, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '离线模式：后端不可用或未连接，所有操作仅缓存在本地',
+                          style: TextStyle(
+                            color: AppColors.warning,
+                            fontWeight: FontWeight.w600,
+                            fontSize: Responsive.value(context,
+                              small: AppFontSizes.body - 1, // 小屏手机使用13px
+                              medium: AppFontSizes.body, // 标准手机使用14px
+                              large: AppFontSizes.bodyLarge, // 大屏手机使用16px
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               },
             ),
-            const SizedBox(height: 8),
-            // 背景图区域：优先显示用户背景图；否则使用淡色占位
-            Container(
-              height: 140,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Colors.blueGrey.shade50,
-                image: (_backgroundUrl != null && _backgroundUrl!.isNotEmpty)
-                    ? DecorationImage(
-                        image: NetworkImage(_backgroundUrl!),
-                        fit: BoxFit.cover,
-                      )
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 12),
+            SizedBox(height: Responsive.value(context,
+              small: 12, // 小屏手机使用12px间距
+              medium: 16, // 标准手机使用16px间距
+              large: 20, // 大屏手机使用20px间距
+            )),
             // 头像/昵称/签名
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
+              padding: AppSpacing.horizontal, // 使用统一的水平间距
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.blue.shade100,
-                    backgroundImage: (_avatarUrl != null && _avatarUrl!.isNotEmpty)
-                        ? NetworkImage(_avatarUrl!)
-                        : null,
-                    child: (_avatarUrl == null || _avatarUrl!.isEmpty)
-                        ? Icon(Icons.person, size: 28, color: Colors.blue.shade700)
-                        : null,
+                  SizedBox(
+                    height: 56,
+                    width: 56,
+                    child: ClipOval(
+                      child: FutureBuilder<bool>(
+                        future: _canLoadImageUrl(_avatarUrl),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState != ConnectionState.done) {
+                            return Container(
+                              decoration: BoxDecoration(
+                                gradient: AppColors.primaryGradient, // 使用渐变背景
+                                borderRadius: BorderRadius.circular(28), // 圆形
+                              ),
+                              child: const Center(child: SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textWhite))),
+                            );
+                          }
+                          final useNetwork = snapshot.data == true;
+                          return AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 300),
+                            child: useNetwork
+                                ? Image.network(_avatarUrl!, fit: BoxFit.cover, key: const ValueKey('av_net'))
+                                : Image.asset('lib/assests/avatar.png', fit: BoxFit.cover, key: const ValueKey('av_asset')),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 26),
+                  const SizedBox(width: 24), // 调整间距
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(_displayName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 6),
-                        Text(_signature, style: const TextStyle(color: Colors.black87)),
-                        const SizedBox(height: 8),
+                        Text(_displayName, style: TextStyle(
+                          fontSize: AppFontSizes.titleLarge, // 24px
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        )),
+                        const SizedBox(height: 8), // 调整间距
+                        Text(_signature, style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: AppFontSizes.body,
+                        )),
+                        const SizedBox(height: 16), // 统一间距 // 调整间距
                         // 状态指示器 Chip：显示当前在线/离线
                         ValueListenableBuilder<bool>(
                           valueListenable: OfflineModeManager.instance.isOffline,
@@ -342,12 +447,18 @@ class _UserProfilePageState extends State<UserProfilePage> {
                               child: Chip(
                                 avatar: Icon(
                                   offline ? Icons.cloud_off : Icons.cloud_queue,
-                                  color: Colors.white,
+                                  color: AppColors.textWhite,
                                   size: 18,
                                 ),
                                 label: Text(offline ? '离线模式' : '在线模式'),
-                                backgroundColor: offline ? Colors.orange : Colors.green,
-                                labelStyle: const TextStyle(color: Colors.white),
+                                backgroundColor: offline ? AppColors.warning : AppColors.success,
+                                labelStyle: TextStyle(
+                                  color: AppColors.textWhite,
+                                  fontSize: AppFontSizes.body,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: AppBorderRadius.medium,
+                                ),
                               ),
                             );
                           },
@@ -358,159 +469,11 @@ class _UserProfilePageState extends State<UserProfilePage> {
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            // 版本切换控件：在线/离线切换，切换时进行一致性检查
-            SectionCard(
-              title: '运行模式',
-              children: [
-                ValueListenableBuilder<bool>(
-                  valueListenable: OfflineModeManager.instance.isOffline,
-                  builder: (context, offline, _) {
-                    return SwitchListTile(
-                      title: Text(offline ? '当前：离线（本地存储）' : '当前：在线（连接后端）'),
-                      subtitle: const Text('切换将进行数据一致性检查'),
-                      value: offline,
-                      onChanged: (val) async {
-                        bool ok = true;
-                        bool switched = false;
-                        if (val) {
-                          // 切到离线：先保存关键数据快照
-                          ok = await SnapshotService.instance.saveBeforeOfflineSwitch();
-                          if (ok) {
-                            switched = await OfflineModeManager.instance.setOffline(true);
-                          }
-                        } else {
-                          // 切到在线：先进行后端健康检查（3秒超时）
-                          final healthy = await HealthCheckService.instance.checkAvailable();
-                          if (!healthy) {
-                            // 友好提示 + 确认对话框
-                            if (mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('后端服务当前不可用'), backgroundColor: Colors.orange),
-                              );
-                            }
-                            final continueSwitch = await showDialog<bool>(
-                              context: context,
-                              builder: (ctx) => AlertDialog(
-                                title: const Text('后端服务不可用'),
-                                content: const Text('检测到后端服务不可用，是否仍要继续切换到在线模式？'),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, false),
-                                    child: const Text('取消'),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Navigator.pop(ctx, true),
-                                    child: const Text('继续切换'),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (continueSwitch == true) {
-                              // 用户仍要继续：保持离线状态不变，顶部显示离线提示条，数据仅缓存在本地
-                              await OfflineModeManager.instance.setOffline(true);
-                              ok = true; // 流程成功，但实际保持离线
-                              switched = false;
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('已保持离线，操作将缓存在本地'), backgroundColor: Colors.blue),
-                                );
-                              }
-                            } else {
-                              // 用户取消：保持当前离线状态
-                              ok = true;
-                              switched = false;
-                            }
-                          } else {
-                            // 健康检查通过：执行一致性检查并切换到在线，随后触发手动同步
-                            ok = await SyncService.instance.ensureConsistencyBeforeSwitch(toOffline: false);
-                            switched = await OfflineModeManager.instance.setOffline(false);
-                            if (switched) {
-                              await SyncService.instance.triggerManualSync();
-                            }
-                          }
-                        }
-                        if (!mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              (ok && switched)
-                                  ? (val ? '已保存并切换到离线模式' : '已切换到在线模式并同步')
-                                  : '切换失败，请稍后重试',
-                            ),
-                            backgroundColor: (ok && switched) ? Colors.blue : Colors.red,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                ),
-                const SizedBox(height: 8),
-                // 同步进度显示：订阅 SyncService 状态流
-                StreamBuilder<Map<String, dynamic>>(
-                  stream: SyncService.instance.statusStream,
-                  builder: (context, snap) {
-                    final data = snap.data ?? const {'state': 'idle'};
-                    final state = (data['state'] ?? 'idle').toString();
-                    if (state == 'running') {
-                      final p = (data['progress'] as num?)?.toDouble() ?? 0.0;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('同步进行中...'),
-                          const SizedBox(height: 6),
-                          LinearProgressIndicator(value: p),
-                        ],
-                      );
-                    }
-                    if (state == 'done') {
-                      final count = data['count'] ?? 0;
-                      return Text('同步完成：$count 项');
-                    }
-                    if (state == 'error') {
-                      final msg = data['message']?.toString() ?? '未知错误';
-                      return Text('同步失败：$msg', style: const TextStyle(color: Colors.red));
-                    }
-                    if (state == 'skipped') {
-                      return const Text('离线中：变更将暂存本地，恢复后自动同步');
-                    }
-                    return const Text('同步空闲');
-                  },
-                ),
-                const SizedBox(height: 8),
-                // 离线切换前保存进度：订阅 SnapshotService 状态流
-                StreamBuilder<Map<String, dynamic>>(
-                  stream: SnapshotService.instance.statusStream,
-                  builder: (context, snap) {
-                    final data = snap.data ?? const {'state': 'idle'};
-                    final state = (data['state'] ?? 'idle').toString();
-                    if (state == 'saving') {
-                      final p = (data['progress'] as num?)?.toDouble() ?? 0.0;
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text('正在保存关键数据...'),
-                          const SizedBox(height: 6),
-                          LinearProgressIndicator(value: p),
-                        ],
-                      );
-                    }
-                    if (state == 'done') {
-                      final count = data['count'] ?? 0;
-                      return Text('离线切换前保存完成：$count 项');
-                    }
-                    if (state == 'error') {
-                      final msg = data['message']?.toString() ?? '未知错误';
-                      return Text('保存失败：$msg', style: const TextStyle(color: Colors.red));
-                    }
-                    return const SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
-            _PhotoWall(photos: _photoUrls),
-            const SizedBox(height: 10),
-            const Divider(height: 1),
+            const SizedBox(height: 16), // 统一间距
+            
+            if (_photoUrls.isNotEmpty) _PhotoWall(photos: _photoUrls),
+            if (_photoUrls.isNotEmpty) const SizedBox(height: 16), // 统一间距
+            if (_photoUrls.isNotEmpty) const Divider(height: 1),
 
             // 统计卡片
             _OverviewCard(
@@ -531,6 +494,8 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ],
           ),
         ),
+        ),
+        ],
       ),
     );
   }
@@ -648,20 +613,17 @@ class _UserProfilePageState extends State<UserProfilePage> {
   // 从后端加载用户照片墙数据
   Future<void> _loadPhotos() async {
     try {
-      // 使用新接口替换占位数据
-      final urls = await PhotoApi().getMyPhotos();
-      if (mounted && urls.isNotEmpty) {
-        setState(() {
-          _photoUrls = urls;
-        });
-      } 
-    } catch (_) {
-      if (mounted) {
-        // 异常回退占位图（避免页面空白）
-        setState(() {
-          _photoUrls = List.generate(6, (i) => 'https://via.placeholder.com/300x200?text=seek_photo_$i');
-        });
+      final healthy = await HealthCheckService.instance.checkAvailable(timeout: const Duration(seconds: 3));
+      if (!healthy) {
+        if (mounted) setState(() => _photoUrls = []);
+        return;
       }
+      final urls = await PhotoApi().getMyPhotos();
+      final ok = urls.isNotEmpty && await _verifyPhotosReachable(urls);
+      if (mounted) setState(() => _photoUrls = ok ? urls : []);
+    } catch (e) {
+      if (!kReleaseMode) debugPrint('Load photos error: $e');
+      if (mounted) setState(() => _photoUrls = []);
     }
   }
 
@@ -743,12 +705,13 @@ class _DataPoint {
     @override
     Widget build(BuildContext context) {
       return Container(
-        margin: const EdgeInsets.all(12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        margin: AppSpacing.medium, // 使用统一的间距配置
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), // 调整内边距
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4))],
+          color: AppColors.backgroundWhite.withOpacity(0.9),
+          borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
+          boxShadow: [AppShadows.light], // 使用统一阴影
+          border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -771,9 +734,16 @@ class _DataPoint {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 6),
-          Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+          Text(title, style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: AppFontSizes.body,
+          )),
+          const SizedBox(height: 8), // 调整间距
+          Text(value, style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: AppFontSizes.title, // 20px
+            fontWeight: FontWeight.bold,
+          )),
         ],
       );
     }
@@ -788,12 +758,13 @@ class _DataPoint {
     @override
     Widget build(BuildContext context) {
       return Container(
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        margin: AppSpacing.medium, // 使用统一的间距配置
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16), // 调整内边距
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.85),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 10, offset: const Offset(0, 4))],
+          color: AppColors.backgroundWhite.withOpacity(0.9),
+          borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
+          boxShadow: [AppShadows.light], // 使用统一阴影
+          border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -801,7 +772,11 @@ class _DataPoint {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('徒步距离(km)', style: Theme.of(context).textTheme.titleMedium),
+                Text('徒步距离(km)', style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: AppFontSizes.title, // 20px
+                  fontWeight: FontWeight.w600,
+                )),
                 Padding(
                   padding: const EdgeInsets.only(left: 12),
                   child: CupertinoSegmentedControl<String>(
@@ -817,7 +792,7 @@ class _DataPoint {
                 )
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12), // 调整间距
             SizedBox(
               height: 130,
               width: double.infinity,
@@ -825,14 +800,14 @@ class _DataPoint {
                 painter: _ChartPainter(data: data),
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12), // 调整间距
             Row(
               children: const [
-                _LegendDot(color: Colors.blue, label: '距离'),
-                SizedBox(width: 12),
-                _LegendDot(color: Colors.green, label: '爬升'),
-                SizedBox(width: 12),
-                _LegendDot(color: Colors.orange, label: '下降'),
+                _LegendDot(color: AppColors.primaryBlue, label: '距离'),
+                SizedBox(width: 16), // 调整间距
+                _LegendDot(color: AppColors.secondaryGreen, label: '爬升'),
+                SizedBox(width: 16), // 调整间距
+                _LegendDot(color: AppColors.warning, label: '下降'),
               ],
             )
           ],
@@ -849,9 +824,19 @@ class _DataPoint {
     Widget build(BuildContext context) {
       return Row(
         children: [
-          Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-          const SizedBox(width: 6),
-          Text(label),
+          Container(
+            width: 10, 
+            height: 10, 
+            decoration: BoxDecoration(
+              color: color, 
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 8), // 调整间距
+          Text(label, style: TextStyle(
+            color: AppColors.textSecondary,
+            fontSize: AppFontSizes.body,
+          )),
         ],
       );
     }
@@ -866,31 +851,39 @@ class _DataPoint {
     Widget build(BuildContext context) {
       if (photos.isEmpty) return const SizedBox.shrink();
       return SizedBox(
-        height: 110,
+        height: 120, // 调整高度
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
+          padding: AppSpacing.horizontal, // 使用统一的水平间距
           itemCount: photos.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 10),
-          itemBuilder: (_, i) => ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: (() {
-              // 统一使用私有签名 URL 解析，兼容完整 URL 与资源 key
-              final resolved = OssService().resolvePrivateUrl(photos[i]);
-              if (resolved == null || resolved.isEmpty) {
-                return Container(
+          separatorBuilder: (_, __) => const SizedBox(width: 12), // 调整间距
+          itemBuilder: (_, i) => Container(
+            decoration: BoxDecoration(
+              borderRadius: AppBorderRadius.large, // 使用统一圆角
+              boxShadow: [AppShadows.light], // 添加柔和阴影
+              border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
+            ),
+            child: ClipRRect(
+              borderRadius: AppBorderRadius.large, // 使用统一圆角
+              child: (() {
+                // 统一使用私有签名 URL 解析，兼容完整 URL 与资源 key
+                final resolved = OssService().resolvePrivateUrl(photos[i]);
+                if (resolved == null || resolved.isEmpty) {
+                  return Container(
+                    width: 140,
+                    height: 120,
+                    color: AppColors.backgroundGrey,
+                    child: Icon(Icons.image_not_supported, color: AppColors.textTertiary, size: 32),
+                  );
+                }
+                return Image.network(
+                  resolved,
                   width: 140,
-                  height: 110,
-                  color: Colors.grey.shade300,
+                  height: 120,
+                  fit: BoxFit.cover,
                 );
-              }
-              return Image.network(
-                resolved,
-                width: 140,
-                height: 110,
-                fit: BoxFit.cover,
-              );
-            })(),
+              })(),
+            ),
           ),
         ),
       );
@@ -903,7 +896,7 @@ class _DataPoint {
   
     @override
     void paint(Canvas canvas, Size size) {
-      final double padding = 10;
+      final double padding = 12; // 调整内边距
       final Rect plot = Rect.fromLTWH(padding, padding, size.width - padding * 2, size.height - padding * 2);
       final maxY = [
         ...data.map((e) => e.distance),
@@ -931,14 +924,15 @@ class _DataPoint {
         final paint = Paint()
           ..color = color
           ..style = PaintingStyle.stroke
-          ..strokeWidth = 2.0
-          ..isAntiAlias = true;
+          ..strokeWidth = 2.5 // 调整线条宽度
+          ..isAntiAlias = true
+          ..strokeCap = StrokeCap.round; // 添加圆角
         canvas.drawPath(buildPath(values), paint);
       }
   
-      drawSeries(data.map((e) => e.distance).toList(), Colors.blue);
-      drawSeries(data.map((e) => e.ascent).toList(), Colors.green);
-      drawSeries(data.map((e) => e.descent).toList(), Colors.orange);
+      drawSeries(data.map((e) => e.distance).toList(), AppColors.primaryBlue);
+      drawSeries(data.map((e) => e.ascent).toList(), AppColors.secondaryGreen);
+      drawSeries(data.map((e) => e.descent).toList(), AppColors.warning);
     }
   
     @override
@@ -978,39 +972,39 @@ class _DataPoint {
                   ? s.title!
                   : '$dateStr · ${s.distanceKm.toStringAsFixed(2)} km';
                return Padding(
-                 padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // 调整水平间距
                  child: SectionCard(
                    title: displayTitle,
                    children: [
                      Row(
                        children: [
-                         const Icon(Icons.directions_walk, size: 18, color: Colors.blue),
-                         const SizedBox(width: 6),
-                         Expanded(child: Text('${s.distanceKm.toStringAsFixed(2)} km')),
+                         Icon(Icons.directions_walk, size: 18, color: AppColors.primaryDarkBlue),
+                         const SizedBox(width: 8),
+                         Expanded(child: Text('${s.distanceKm.toStringAsFixed(2)} km', style: TextStyle(color: AppColors.textPrimary, fontSize: AppFontSizes.body))),
                        ],
                      ),
                      const SizedBox(height: 8),
                      Row(
                        children: [
-                         const Icon(Icons.access_time, size: 18, color: Colors.blue),
-                         const SizedBox(width: 6),
-                         Expanded(child: Text('$dateStr · 时长 ${fmtDuration(s.durationMin)}')),
+                         Icon(Icons.access_time, size: 18, color: AppColors.primaryDarkBlue),
+                         const SizedBox(width: 8),
+                         Expanded(child: Text('$dateStr · 时长 ${fmtDuration(s.durationMin)}', style: TextStyle(color: AppColors.textPrimary, fontSize: AppFontSizes.body))),
                        ],
                      ),
                      const SizedBox(height: 8),
                      Row(
                        children: [
-                         const Icon(Icons.stacked_line_chart, size: 18, color: Colors.blue),
-                         const SizedBox(width: 6),
-                         Expanded(child: Text('爬升 ${s.ascentM.toStringAsFixed(0)} m · 下降 ${s.descentM.toStringAsFixed(0)} m')),
+                         Icon(Icons.stacked_line_chart, size: 18, color: AppColors.primaryDarkBlue),
+                         const SizedBox(width: 8),
+                         Expanded(child: Text('爬升 ${s.ascentM.toStringAsFixed(0)} m · 下降 ${s.descentM.toStringAsFixed(0)} m', style: TextStyle(color: AppColors.textPrimary, fontSize: AppFontSizes.body))),
                        ],
                      ),
                      const SizedBox(height: 8),
                      Row(
                        children: [
-                         const Icon(Icons.local_fire_department, size: 18, color: Colors.blue),
-                         const SizedBox(width: 6),
-                         Expanded(child: Text('${s.calories} kcal')),
+                         Icon(Icons.local_fire_department, size: 18, color: AppColors.primaryDarkBlue),
+                         const SizedBox(width: 8),
+                         Expanded(child: Text('${s.calories} kcal', style: TextStyle(color: AppColors.textPrimary, fontSize: AppFontSizes.body))),
                        ],
                      ),
                    ],
@@ -1019,8 +1013,8 @@ class _DataPoint {
             }),
           if (loadingMore)
             const Padding(
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
+              padding: EdgeInsets.symmetric(vertical: 16), // 调整间距
+              child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryBlue))),
             ),
         ],
       );

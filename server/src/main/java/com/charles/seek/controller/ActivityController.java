@@ -48,8 +48,8 @@ public class ActivityController {
     }
 
     @GetMapping("/time")
-    public ResponseEntity<List<QueryActivityResponse>> listByTimeRange(@RequestParam LocalDateTime start,
-                                                                       @RequestParam LocalDateTime end) {
+    public ResponseEntity<List<QueryActivityResponse>> listByTimeRange(@RequestParam("start") LocalDateTime start,
+                                                                       @RequestParam("end") LocalDateTime end) {
         return ResponseEntity.ok(activityService.listByTimeRange(start, end));
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 
 class SectionCard extends StatelessWidget {
   final String title;
@@ -17,17 +18,12 @@ class SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: padding ?? const EdgeInsets.all(16),
+      padding: padding ?? AppSpacing.medium, // 使用统一的间距配置
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        color: AppColors.backgroundWhite.withOpacity(0.9),
+        borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
+        boxShadow: [AppShadows.light], // 使用统一阴影
+        border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,10 +32,10 @@ class SectionCard extends StatelessWidget {
           if (trailing == null) ...[
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 16,
+              style: TextStyle(
+                fontSize: AppFontSizes.title, // 20px
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: AppColors.textPrimary,
               ),
             ),
           ] else ...[
@@ -48,10 +44,10 @@ class SectionCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: const TextStyle(
-                      fontSize: 16,
+                    style: TextStyle(
+                      fontSize: AppFontSizes.title, // 20px
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ),
