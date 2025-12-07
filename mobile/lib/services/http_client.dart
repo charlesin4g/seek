@@ -21,7 +21,8 @@ class ApiException implements Exception {
 
 class HttpClient {
   final String localBaseUrl = 'http://127.0.0.1:8080';
-  final String localAreaBaseUrl = 'http://172.16.115.42:8080';
+  // final String localAreaBaseUrl = 'http://172.16.115.42:8080';
+  final String localAreaBaseUrl = 'http://192.168.3.24:8080';
 
   HttpClient({this.baseUrl = 'http://127.0.0.1:8080', http.Client? client})
     : _client = client ?? http.Client();

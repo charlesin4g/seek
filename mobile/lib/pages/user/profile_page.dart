@@ -31,7 +31,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
   String _displayName = '加载中...';
   String _signature = '加载中...';
   String? _avatarUrl;
-  String? _backgroundUrl; // 个人主页背景图 URL（私有签名访问）
   // 刷新与页面状态
   bool _refreshing = false; // 是否处于刷新过程（用于避免重复触发与平滑过渡）
   bool _loadFailed = false; // 最近一次主动刷新是否失败（控制空态显示）
@@ -55,7 +54,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
               _avatarUrl = OssService().resolvePrivateUrl(avatar?.toString());
               // 使用 OssService 解析私有背景图 URL（可生成临时签名访问）
               final bg = userProfile['backgroundUrl'] ?? userProfile['background'];
-              _backgroundUrl = OssService().resolvePrivateUrl(bg?.toString());
             });
           }
         } else {
@@ -222,7 +220,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _displayName = '暂无数据';
         _signature = '暂无数据';
         _avatarUrl = null;
-        _backgroundUrl = null;
         _sessions = [];
         _allSessions = [];
         _photoUrls = [];
@@ -356,9 +353,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
                   width: double.infinity,
                   padding: Responsive.responsivePadding(context), // 使用响应式间距
                   decoration: BoxDecoration(
-                    color: AppColors.warning.withOpacity(0.1), // 使用统一的警告色
+                    color: AppColors.warning.withValues(alpha: 0.1), // 使用统一的警告色
                     borderRadius: AppBorderRadius.large, // 使用统一圆角
-                    border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
                     boxShadow: [AppShadows.light], // 添加柔和阴影
                   ),
                   child: Row(
@@ -708,7 +705,7 @@ class _DataPoint {
         margin: AppSpacing.medium, // 使用统一的间距配置
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16), // 调整内边距
         decoration: BoxDecoration(
-          color: AppColors.backgroundWhite.withOpacity(0.9),
+          color: AppColors.backgroundWhite.withValues(alpha: 0.9),
           borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
           boxShadow: [AppShadows.light], // 使用统一阴影
           border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
@@ -761,7 +758,7 @@ class _DataPoint {
         margin: AppSpacing.medium, // 使用统一的间距配置
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 16), // 调整内边距
         decoration: BoxDecoration(
-          color: AppColors.backgroundWhite.withOpacity(0.9),
+          color: AppColors.backgroundWhite.withValues(alpha: 0.9),
           borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
           boxShadow: [AppShadows.light], // 使用统一阴影
           border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框

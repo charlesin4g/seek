@@ -15,7 +15,6 @@ void main() async {
   // 测试配置
   const baseUrl = 'http://127.0.0.1:8080';
   final testUsername = 'network_user_${DateTime.now().millisecondsSinceEpoch}';
-  const testPassword = 'Network@123';
   
   print('测试配置:');
   print('- 测试用户: $testUsername');
@@ -80,7 +79,6 @@ void main() async {
     
     // 2.1 模拟网络中断后立即恢复
     print('   模拟网络中断后立即恢复...');
-    final disconnectStart = DateTime.now();
     
     // 模拟网络中断（通过访问不存在的地址）
     try {
@@ -240,7 +238,7 @@ void main() async {
   }
   
   // 生成测试报告
-  print('\n' + '=' * 60);
+  print('${'\n${'=' * 60}'}');
   print('📊 网络切换测试报告');
   print('=' * 60);
   

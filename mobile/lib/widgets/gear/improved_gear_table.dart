@@ -56,7 +56,8 @@ class ImprovedGearTable extends StatelessWidget {
               ),
               child: DataTable(
                 headingRowHeight: 48,
-                dataRowHeight: 56,
+                dataRowMinHeight: 56,
+                dataRowMaxHeight: 56,
                 horizontalMargin: 16,
                 columnSpacing: 16,
                 dividerThickness: 1,

@@ -20,7 +20,7 @@ class SectionCard extends StatelessWidget {
     return Container(
       padding: padding ?? AppSpacing.medium, // 使用统一的间距配置
       decoration: BoxDecoration(
-        color: AppColors.backgroundWhite.withOpacity(0.9),
+        color: AppColors.backgroundWhite.withValues(alpha: 0.9),
         borderRadius: AppBorderRadius.extraLarge, // 使用统一圆角
         boxShadow: [AppShadows.light], // 使用统一阴影
         border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框

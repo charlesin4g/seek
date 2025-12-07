@@ -16,7 +16,7 @@ class UserApi {
   Never _handleException(ApiException e, String operation) {
     switch (e.statusCode) {
       case 400:
-        throw BadRequestException('${operation}失败：${e.message}');
+        throw BadRequestException('$operation失败：${e.message}');
       case 401:
         throw UnauthorizedException('未登录或登录已过期');
       case 404:

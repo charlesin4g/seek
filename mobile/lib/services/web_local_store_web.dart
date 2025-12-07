@@ -14,8 +14,8 @@ class WebLocalStore {
   static const String _sessionKey = 'web_session_state';
   static const String _cacheKey = 'web_temp_cache';
 
-  String? _getItem(String key) => html.window.localStorage[key];
-  void _setItem(String key, String value) => html.window.localStorage[key] = value;
+  String? _getItem(String key) => html.window.localStorage.getItem(key);
+  void _setItem(String key, String value) => html.window.localStorage.setItem(key, value);
 
   List<Map<String, dynamic>> _readList(String key) {
     final raw = _getItem(key);

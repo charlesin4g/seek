@@ -13,7 +13,6 @@ void main() async {
   // 测试配置
   const baseUrl = 'http://127.0.0.1:8080';
   final testUsername = 'offline_user_${DateTime.now().millisecondsSinceEpoch}';
-  const testPassword = 'Offline@123';
   
   print('测试配置:');
   print('- 测试用户: $testUsername');
@@ -23,11 +22,9 @@ void main() async {
   try {
     // 1. 首先创建测试用户（确保网络正常时）
     print('1️⃣ 创建测试用户（网络正常）...');
-    final createStart = DateTime.now();
     
     // 由于用户创建接口有问题，我们直接使用现有的测试用户
     final existingUser = 'testuser';
-    final existingPassword = 'testpass';
     
     print('   使用现有测试用户: $existingUser');
     testResults['user_setup'] = true;
@@ -50,7 +47,7 @@ void main() async {
     };
     
     // 模拟本地存储（实际应用中会是SQLite等本地数据库）
-    final localTickets = <Map<String, dynamic>>[offlineTicket];
+
     final localDataDuration = DateTime.now().difference(localDataStart).inMilliseconds / 1000;
     performanceMetrics['local_data_creation'] = localDataDuration;
     
@@ -180,7 +177,7 @@ void main() async {
   }
   
   // 生成测试报告
-  print('\n' + '=' * 60);
+  print('${'\n${'=' * 60}'}');
   print('📊 离线模式测试报告');
   print('=' * 60);
   

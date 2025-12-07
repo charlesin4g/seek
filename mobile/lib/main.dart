@@ -65,7 +65,6 @@ class MyApp extends StatelessWidget {
           primary: AppColors.primaryBlue,
           secondary: AppColors.secondaryGreen,
           surface: AppColors.backgroundWhite,
-          background: AppColors.backgroundLight,
         ),
         // 应用栏主题
         appBarTheme: AppBarTheme(
@@ -146,10 +145,10 @@ class MyApp extends StatelessWidget {
         navigationBarTheme: NavigationBarThemeData(
           backgroundColor: AppColors.backgroundWhite,
           indicatorColor: AppColors.primaryLightBlue,
-          labelTextStyle: MaterialStateProperty.all(
+          labelTextStyle: WidgetStateProperty.all(
             const TextStyle(fontSize: AppFontSizes.body, color: AppColors.textSecondary),
           ),
-          iconTheme: MaterialStateProperty.all(
+          iconTheme: WidgetStateProperty.all(
             const IconThemeData(color: AppColors.textSecondary),
           ),
         ),
@@ -177,9 +176,9 @@ class MyApp extends StatelessWidget {
         // 指示器颜色
         indicatorColor: AppColors.primaryBlue,
         // 选中颜色
-        highlightColor: AppColors.primaryLightBlue.withOpacity(0.1),
+        highlightColor: AppColors.primaryLightBlue.withValues(alpha: 0.1),
         // 波纹颜色
-        splashColor: AppColors.primaryBlue.withOpacity(0.1),
+        splashColor: AppColors.primaryBlue.withValues(alpha: 0.1),
       ),
       home: const AuthWrapper(),
     );
@@ -277,7 +276,6 @@ class _HomeTabsState extends State<HomeTabs> {
 
   @override
   Widget build(BuildContext context) {
-    final ColorScheme colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
