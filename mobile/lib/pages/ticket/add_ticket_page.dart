@@ -3,6 +3,7 @@ import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
 import '../../widgets/selector_field.dart';
 import '../../services/ticket_api.dart';
+import '../../config/app_colors.dart';
 import '../../models/ticket.dart';
 import '../../services/storage_service.dart';
 import 'dart:convert';
@@ -496,7 +497,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
@@ -565,7 +566,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                                       ListTile(
                                         dense: true,
                                         title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: Colors.blue),
+                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
                                         onTap: () => _showAddStationDialog(isDepart: true),
                                       ),
                                   ],
@@ -624,7 +625,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                                       ListTile(
                                         dense: true,
                                         title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: Colors.blue),
+                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
                                         onTap: () => _showAddStationDialog(isDepart: false),
                                       ),
                                   ],
@@ -657,7 +658,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                         ),
                         Expanded(
                           flex: 3,
-                          child: Text('$_durationMinutes分钟', style: const TextStyle(fontSize: 16, color: Colors.blue)),
+                          child: Text('$_durationMinutes分钟', style: const TextStyle(fontSize: 16, color: AppColors.primaryDarkBlue)),
                         ),
                       ],
                     ),
@@ -754,7 +755,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
@@ -802,7 +803,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
@@ -878,7 +879,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
                 child: ElevatedButton(
                   onPressed: _saveTicket,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.primaryBlue,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 48),
                     shape: RoundedRectangleBorder(

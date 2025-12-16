@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 
 class SelectorField extends StatelessWidget {
   final String label;
@@ -49,12 +50,12 @@ class SelectorField extends StatelessWidget {
                     value,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.blue,
+                      color: AppColors.primaryDarkBlue,
                     ),
                   ),
                   const Icon(
                     Icons.chevron_right,
-                    color: Colors.blue,
+                    color: AppColors.primaryDarkBlue,
                     size: 20,
                   ),
                 ],

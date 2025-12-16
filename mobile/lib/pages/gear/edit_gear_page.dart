@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../models/gear.dart';
+import '../../config/app_colors.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
 import '../../widgets/selector_field.dart';
@@ -206,7 +207,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                 child: ElevatedButton(
                   onPressed: _saveEquipment,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: AppColors.primaryBlue,
                     foregroundColor: Colors.white,
                     minimumSize: const Size(double.infinity, 48),
                     shape: RoundedRectangleBorder(
@@ -254,7 +255,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blue),
+                borderSide: const BorderSide(color: AppColors.primaryBlue),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),
@@ -277,7 +278,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                     margin: const EdgeInsets.symmetric(horizontal: 2),
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.blue : Colors.grey.shade200,
+                      color: isSelected ? AppColors.primaryBlue : Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -450,7 +451,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                               Navigator.pop(context);
                             },
                             trailing: _selectedCategory == code
-                                ? const Icon(Icons.check, color: Colors.blue)
+                                ? const Icon(Icons.check, color: AppColors.primaryBlue)
                                 : null,
                           );
                         },
@@ -490,7 +491,7 @@ class _EquipmentEditPageState extends State<EquipmentEditPage> {
                             },
                             // 高亮逻辑基于保存的 name
                             trailing: _selectedBrand == brand.name
-                                ? const Icon(Icons.check, color: Colors.blue)
+                                ? const Icon(Icons.check, color: AppColors.primaryBlue)
                                 : null,
                           );
                         },

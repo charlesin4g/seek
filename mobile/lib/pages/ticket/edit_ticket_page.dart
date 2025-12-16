@@ -3,6 +3,7 @@ import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
 import '../../widgets/selector_field.dart';
 import '../../services/ticket_api.dart';
+import '../../config/app_colors.dart';
 import '../../models/ticket.dart';
 import '../../services/storage_service.dart';
 import 'dart:convert';
@@ -501,7 +502,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
@@ -567,7 +568,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                       ListTile(
                                         dense: true,
                                         title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: Colors.blue),
+                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
                                         onTap: () => _showAddStationDialog(isDepart: true),
                                       ),
                                   ],
@@ -623,7 +624,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                       ListTile(
                                         dense: true,
                                         title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: Colors.blue),
+                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
                                         onTap: () => _showAddStationDialog(isDepart: false),
                                       ),
                                   ],
@@ -651,7 +652,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                     Row(
                       children: [
                         const Expanded(flex: 2, child: Text('行程时长', style: TextStyle(fontSize: 16, color: Colors.black87))),
-                        Expanded(flex: 3, child: Text('$_durationMinutes分钟', style: const TextStyle(fontSize: 16, color: Colors.blue))),
+                        Expanded(flex: 3, child: Text('$_durationMinutes分钟', style: const TextStyle(fontSize: 16, color: AppColors.primaryDarkBlue))),
                       ],
                     ),
                   ],
@@ -718,7 +719,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),
@@ -766,7 +767,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: Colors.blue),
+                                borderSide: const BorderSide(color: AppColors.primaryBlue),
                               ),
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                             ),

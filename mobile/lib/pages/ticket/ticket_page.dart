@@ -5,6 +5,7 @@ import '../../models/ticket.dart';
 import 'add_ticket_page.dart';
 import 'edit_ticket_page.dart';
 import '../../widgets/refresh_and_empty.dart';
+import '../../config/app_colors.dart';
 
 class TicketPage extends StatefulWidget {
   const TicketPage({super.key});
@@ -37,11 +38,7 @@ class _TicketPageState extends State<TicketPage> {
   Widget build(BuildContext context) {
     return Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFE3F2FD), Color(0xFFF8F9FA)],
-        ),
+        gradient: AppColors.backgroundGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
@@ -50,9 +47,16 @@ class _TicketPageState extends State<TicketPage> {
           elevation: 0,
           title: Row(
             children: const [
-              Icon(Icons.confirmation_number, color: Colors.blue),
+              Icon(Icons.confirmation_number, color: AppColors.primaryBlue),
               SizedBox(width: 8),
-              Text('票据管理', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blue)),
+              Text(
+                '票据管理',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
           actions: const [],
@@ -104,7 +108,7 @@ class _TicketPageState extends State<TicketPage> {
                       return SectionCard(
                         title: '${t.type == 'train' ? '火车票' : '飞机票'} · ${t.code}',
                         trailing: IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blueGrey),
+                          icon: const Icon(Icons.edit, color: AppColors.primaryDarkBlue),
                           iconSize: 18, // 做得小一点
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
@@ -120,7 +124,7 @@ class _TicketPageState extends State<TicketPage> {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.place, size: 18, color: Colors.blue),
+                              const Icon(Icons.place, size: 18, color: AppColors.primaryBlue),
                               const SizedBox(width: 6),
                               Expanded(child: Text('${t.departStation} → ${t.arriveStation}')),
                             ],
@@ -128,7 +132,7 @@ class _TicketPageState extends State<TicketPage> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.access_time, size: 18, color: Colors.blue),
+                              const Icon(Icons.access_time, size: 18, color: AppColors.primaryBlue),
                               const SizedBox(width: 6),
                               Expanded(child: Text(_fmtRange(t))),
                             ],
@@ -136,7 +140,7 @@ class _TicketPageState extends State<TicketPage> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.chair, size: 18, color: Colors.blue),
+                              const Icon(Icons.chair, size: 18, color: AppColors.primaryBlue),
                               const SizedBox(width: 6),
                               Expanded(child: Text('${t.seatType ?? ''} ${t.seatNo ?? ''}'.trim())),
                             ],
@@ -144,7 +148,7 @@ class _TicketPageState extends State<TicketPage> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.payments, size: 18, color: Colors.blue),
+                              const Icon(Icons.payments, size: 18, color: AppColors.primaryBlue),
                               const SizedBox(width: 6),
                               Expanded(child: Text('¥${t.price.toStringAsFixed(2)} · ${t.ticketCategory} · ${t.status}')),
                             ],
@@ -160,7 +164,7 @@ class _TicketPageState extends State<TicketPage> {
           },
         ),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.primaryBlue,
           child: const Icon(Icons.add, color: Colors.white),
           onPressed: () async {
             final added = await Navigator.push(

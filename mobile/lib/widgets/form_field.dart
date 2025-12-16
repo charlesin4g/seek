@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 
 class CustomFormField extends StatelessWidget {
   final String label;
@@ -58,7 +59,7 @@ class CustomFormField extends StatelessWidget {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: const BorderSide(color: Colors.blue),
+                borderSide: const BorderSide(color: AppColors.primaryBlue),
               ),
               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             ),

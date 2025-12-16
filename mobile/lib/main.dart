@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'pages/gear/gear_page.dart';
 import 'pages/login_page.dart';
-import 'pages/ticket/ticket_page.dart';
 import 'pages/user/profile_page.dart';
-import 'widgets/tab_scaffold.dart';
+import 'pages/trail/trail_list_page.dart';
+import 'pages/trail/trail_map_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_api.dart';
 import 'services/env.dart';
@@ -268,9 +268,9 @@ class _HomeTabsState extends State<HomeTabs> {
 
   late final List<Widget> _pages = <Widget>[
     HomePage(onNavigate: (index) => setState(() => _currentIndex = index)),
-    const TicketPage(),
+    const TrailListPage(),
+    const TrailMapPage(),
     const GearPage(),
-    const TabScaffold(title: 'Messages', icon: Icons.message),
     const UserProfilePage(),
   ];
 
@@ -287,11 +287,31 @@ class _HomeTabsState extends State<HomeTabs> {
           setState(() => _currentIndex = index);
         },
         destinations: const <NavigationDestination>[
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.confirmation_number_outlined), selectedIcon: Icon(Icons.confirmation_number), label: 'Tickets'),
-          NavigationDestination(icon: Icon(Icons.sports_outlined), selectedIcon: Icon(Icons.sports), label: 'Gear'),
-          NavigationDestination(icon: Icon(Icons.message_outlined), selectedIcon: Icon(Icons.message), label: 'Messages'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: '首页',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.route_outlined),
+            selectedIcon: Icon(Icons.route),
+            label: '足迹',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.map_outlined),
+            selectedIcon: Icon(Icons.map),
+            label: '地图',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.event_note_outlined),
+            selectedIcon: Icon(Icons.event_note),
+            label: '计划',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: '我的',
+          ),
         ],
         backgroundColor: AppColors.backgroundWhite,
         indicatorColor: AppColors.primaryLightBlue,
@@ -348,84 +368,319 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cached = StorageService().getCachedUserSync();
-    final displayName = (cached?['displayName'] ?? cached?['username'] ?? AuthService().currentUser ?? '见山用户').toString();
-    final mq = MediaQuery.of(context);
-    final minHeight = mq.size.height - mq.padding.top - mq.padding.bottom - 48;
+    final displayName = (cached?['displayName'] ?? cached?['username'] ?? AuthService().currentUser ?? '旅行者').toString();
+
+    Widget buildStatCard({
+      required IconData icon,
+      required String label,
+      required String value,
+      required Color color,
+    }) {
+      return Expanded(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.backgroundWhite,
+            borderRadius: AppBorderRadius.extraLarge,
+            boxShadow: const [AppShadows.light],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: color.withOpacity(0.12),
+                child: Icon(icon, size: 18, color: color),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: AppFontSizes.titleLarge,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: AppFontSizes.body,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    Widget buildSegmentChip(String label, {bool selected = false}) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryDarkBlue : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: selected ? AppColors.textWhite : AppColors.textSecondary,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      );
+    }
+
+    Widget buildTrendCard() {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: AppBorderRadius.extraLarge,
+          boxShadow: const [AppShadows.light],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '心率趋势',
+                  style: TextStyle(
+                    fontSize: AppFontSizes.subtitle,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Row(
+                  children: [
+                    buildSegmentChip('今日', selected: true),
+                    const SizedBox(width: 4),
+                    buildSegmentChip('本周'),
+                    const SizedBox(width: 4),
+                    buildSegmentChip('本月'),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              height: 120,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(child: _TrendBar(heightFactor: 0.4)),
+                  Expanded(child: _TrendBar(heightFactor: 0.75)),
+                  Expanded(child: _TrendBar(heightFactor: 0.6)),
+                  Expanded(child: _TrendBar(heightFactor: 0.9)),
+                  Expanded(child: _TrendBar(heightFactor: 0.55)),
+                  Expanded(child: _TrendBar(heightFactor: 0.8)),
+                  Expanded(child: _TrendBar(heightFactor: 0.5)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: const [
+                Text('08:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
+                Text('10:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
+                Text('12:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
+                Text('16:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
+                Text('20:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
+
+    Widget buildTripCard({
+      required String from,
+      required String to,
+      required String detail,
+      required String badgeText,
+      required Color badgeColor,
+    }) {
+      return Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: AppBorderRadius.extraLarge,
+          boxShadow: const [AppShadows.light],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: AppColors.primaryGradient,
+              ),
+              child: const Icon(Icons.flight_takeoff, size: 20, color: AppColors.textWhite),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '$from → $to',
+                    style: const TextStyle(
+                      fontSize: AppFontSizes.bodyLarge,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    detail,
+                    style: const TextStyle(
+                      fontSize: AppFontSizes.body,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: badgeColor.withOpacity(0.16),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                badgeText,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: badgeColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          Positioned.fill(
+          const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
-                gradient: AppColors.backgroundGradient, // 使用渐变背景
-                boxShadow: [AppShadows.light], // 添加柔和阴影
+                gradient: AppColors.backgroundGradient,
               ),
             ),
           ),
           SafeArea(
-            child: Center(
-              child: ResponsiveContainer( // 使用响应式容器
-                padding: Responsive.responsivePadding(context), // 使用响应式间距
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: minHeight, maxWidth: 600),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        children: [
-                          const SizedBox(height: 32), // 调整间距
-                          Text(
-                            '欢迎回来，$displayName',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: Responsive.value(context,
-                                small: AppFontSizes.title, // 小屏使用20px
-                                medium: AppFontSizes.titleLarge, // 标准屏使用24px
-                                large: AppFontSizes.titleLarge + 2, // 大屏使用26px
+            child: ResponsiveContainer(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '早安，旅行者',
+                                style: TextStyle(
+                                  fontSize: AppFontSizes.subtitle,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
                               ),
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                              const SizedBox(height: 4),
+                              Text(
+                                '愿每次旅程元气满满！',
+                                style: TextStyle(
+                                  fontSize: Responsive.responsiveFontSize(context, AppFontSizes.body),
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        CircleAvatar(
+                          radius: 20,
+                          backgroundColor: AppColors.backgroundWhite,
+                          child: Text(
+                            displayName.isNotEmpty ? displayName[0] : '旅',
+                            style: const TextStyle(
+                              fontSize: AppFontSizes.subtitle,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primaryDarkBlue,
                             ),
                           ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 60),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _QuickButton(
-                              icon: Icons.confirmation_number,
-                              label: '票据管理',
-                              onPressed: () => onNavigate(1),
-                            ),
-                            SizedBox(height: Responsive.value(context,
-                              small: 12, // 小屏手机使用12px间距
-                              medium: 16, // 标准手机使用16px间距
-                              large: 20, // 大屏手机使用20px间距
-                            )),
-                            _QuickButton(
-                              icon: Icons.sports,
-                              label: '装备管理',
-                              onPressed: () => onNavigate(2),
-                            ),
-                            SizedBox(height: Responsive.value(context,
-                              small: 12,
-                              medium: 16,
-                              large: 20,
-                            )),
-                            _QuickButton(
-                              icon: Icons.person,
-                              label: '个人信息',
-                              onPressed: () => onNavigate(4),
-                            ),
-                          ],
                         ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        buildStatCard(
+                          icon: Icons.directions_walk,
+                          label: '步数',
+                          value: '12,847',
+                          color: AppColors.secondaryGreen,
+                        ),
+                        buildStatCard(
+                          icon: Icons.favorite,
+                          label: '心率',
+                          value: '8.6',
+                          color: AppColors.primaryDarkBlue,
+                        ),
+                        buildStatCard(
+                          icon: Icons.access_time,
+                          label: '时长',
+                          value: '2h 35m',
+                          color: AppColors.warning,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    buildTrendCard(),
+                    const SizedBox(height: 24),
+                    const Text(
+                      '即将出行',
+                      style: TextStyle(
+                        fontSize: AppFontSizes.subtitle,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 12),
+                    buildTripCard(
+                      from: '北京',
+                      to: '西安',
+                      detail: '明天 14:30 · 三等座 12车06F',
+                      badgeText: '18小时',
+                      badgeColor: AppColors.warning,
+                    ),
+                    buildTripCard(
+                      from: '西安',
+                      to: '拉萨',
+                      detail: '3月15日 09:45 · 软卧 32A',
+                      badgeText: '5天',
+                      badgeColor: AppColors.secondaryGreen,
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             ),
@@ -436,43 +691,23 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _QuickButton extends StatelessWidget {
-  const _QuickButton({required this.icon, required this.label, required this.onPressed});
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
+class _TrendBar extends StatelessWidget {
+  const _TrendBar({required this.heightFactor});
+
+  final double heightFactor;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: Responsive.responsiveButtonHeight(context), // 使用响应式按钮高度
-      child: FilledButton(
-        style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: AppBorderRadius.medium, // 圆角6px
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: FractionallySizedBox(
+        heightFactor: heightFactor,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            gradient: AppColors.primaryGradient,
           ),
-          elevation: 0,
-        ),
-        onPressed: onPressed,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: Responsive.value(context,
-              small: 16, // 小屏手机图标16px
-              medium: 18, // 标准手机图标18px
-              large: 20, // 大屏手机图标20px
-            )),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(
-              fontSize: Responsive.value(context,
-                small: AppFontSizes.body, // 小屏手机使用14px
-                medium: AppFontSizes.bodyLarge, // 标准手机使用16px
-                large: AppFontSizes.bodyLarge + 2, // 大屏手机使用18px
-              ),
-            )),
-          ],
         ),
       ),
     );

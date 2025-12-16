@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/offline_mode.dart';
+import '../config/app_colors.dart';
 import '../services/sync_service.dart';
 
 /// 统一的离线模式切换提示
@@ -24,7 +25,7 @@ Future<void> showOfflineSwitchPrompt(BuildContext context) async {
             await OfflineModeManager.instance.setOffline(true);
             if (context.mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('已切换到离线模式'), backgroundColor: Colors.blue),
+                const SnackBar(content: Text('已切换到离线模式'), backgroundColor: AppColors.primaryBlue),
               );
             }
             if (ctx.mounted) Navigator.pop(ctx);

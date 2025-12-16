@@ -6,21 +6,21 @@ import 'package:flutter/material.dart';
 /// 背景色：采用柔和的浅蓝白渐变
 /// 文字颜色：深灰确保可读性
 class AppColors {
-  // 主色调 - 浅蓝色系列
-  static const Color primaryLightBlue = Color(0xFFE6F7FF); // 主色调：浅蓝色
-  static const Color primaryBlue = Color(0xFF91D5FF);      // 主要蓝色
-  static const Color primaryDarkBlue = Color(0xFF1890FF); // 深蓝色
-  static const Color primaryDeeperBlue = Color(0xFF096DD9); // 更深蓝色
+  // 主色调 - 青绿色系，对应首页图中的主按钮和图标
+  static const Color primaryLightBlue = Color(0xFFB8F3EC); // 浅青色，用于高亮背景
+  static const Color primaryBlue = Color(0xFF16C2B5);      // 主色：青绿色
+  static const Color primaryDarkBlue = Color(0xFF0B9B8B); // 深青色
+  static const Color primaryDeeperBlue = Color(0xFF067A6A); // 更深青色
   
-  // 辅助色 - 浅绿色系列
-  static const Color secondaryLightGreen = Color(0xFFE8F8F5); // 辅助色：浅绿色
-  static const Color secondaryGreen = Color(0xFF52C41A);     // 主要绿色
-  static const Color secondaryDarkGreen = Color(0xFF389E0D); // 深绿色
+  // 辅助色 - 绿色系，用于成功/状态高亮
+  static const Color secondaryLightGreen = Color(0xFFE4F8EC); // 浅绿色
+  static const Color secondaryGreen = Color(0xFF32C48D);     // 主绿色
+  static const Color secondaryDarkGreen = Color(0xFF1E9B6C); // 深绿色
   
-  // 背景色 - 渐变系列
-  static const Color backgroundLight = Color(0xFFF0F9FF);     // 背景渐变起始色
-  static const Color backgroundWhite = Color(0xFFFFFFFF);     // 纯白色
-  static const Color backgroundGrey = Color(0xFFFAFAFA);      // 浅灰色背景
+  // 背景色 - 对应首页粉橙渐变+卡片背景
+  static const Color backgroundLight = Color(0xFFFFE0C8);     // 顶部粉橙色
+  static const Color backgroundWhite = Color(0xFFFFFFFF);     // 纯白卡片 / 导航背景
+  static const Color backgroundGrey = Color(0xFFFFF5F7);      // 浅粉背景
   
   // 文字颜色
   static const Color textPrimary = Color(0xFF333333);       // 主要文字：深灰
@@ -28,11 +28,11 @@ class AppColors {
   static const Color textTertiary = Color(0xFF999999);       // 提示文字：浅灰
   static const Color textWhite = Color(0xFFFFFFFF);          // 白色文字
   
-  // 状态颜色
-  static const Color success = Color(0xFF52C41A);            // 成功：绿色
-  static const Color warning = Color(0xFFFAAD14);          // 警告：黄色
-  static const Color error = Color(0xFFFF4D4F);             // 错误：红色
-  static const Color info = Color(0xFF1890FF);             // 信息：蓝色
+  // 状态颜色（与新主色系协调）
+  static const Color success = Color(0xFF32C48D);            // 成功：绿色偏青
+  static const Color warning = Color(0xFFFF9E5E);            // 警告/提醒：柔和橙色
+  static const Color error = Color(0xFFFF6B81);              // 错误：粉红红色
+  static const Color info = Color(0xFF16C2B5);               // 信息：使用主青色
   
   // 边框和分割线
   static const Color borderLight = Color(0xFFE8E8E8);       // 浅色边框
@@ -44,11 +44,15 @@ class AppColors {
   static const Color shadowMedium = Color(0x1A000000);      // 中等阴影：rgba(0,0,0,0.1)
   static const Color shadowDark = Color(0x26000000);        // 深色阴影：rgba(0,0,0,0.15)
   
-  // 渐变配置
+  // 渐变配置，对应首页的整体背景和主按钮
   static const Gradient backgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [backgroundLight, backgroundWhite],
+    colors: [
+      Color(0xFFFFE0C8), // 顶部粉橙
+      Color(0xFFFBD5F5), // 中部粉紫
+      Color(0xFFE5F4FF), // 底部淡蓝
+    ],
   );
   
   static const Gradient primaryGradient = LinearGradient(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../config/app_colors.dart';
 import '../../models/gear.dart';
 import '../../services/gear_api.dart';
 import 'edit_gear_page.dart';
@@ -9,7 +10,7 @@ class EquipmentSelectionPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: AppColors.backgroundLight.withValues(alpha: 0.2),
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -17,7 +18,7 @@ class EquipmentSelectionPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
           icon: const Icon(
             Icons.arrow_back,
-            color: Colors.blue,
+            color: AppColors.primaryBlue,
           ),
         ),
         title: const Text(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/offline_mode.dart';
+import '../config/app_colors.dart';
 
 class ModeSwitchCard extends StatefulWidget {
   final String title;
@@ -36,7 +37,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
             child: ValueListenableBuilder<bool>(
               valueListenable: isOfflineListenable,
               builder: (context, offline, _) {
-                final color = offline ? Colors.grey : Colors.blue;
+                final color = offline ? Colors.grey : AppColors.primaryBlue;
                 final icon = offline ? Icons.cloud_off : Icons.cloud_queue;
                 final text = offline ? '离线' : '在线';
                 return Row(
@@ -71,7 +72,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
                         child: Icon(
                           offline ? Icons.wifi : Icons.wifi_off,
                           key: ValueKey(offline),
-                          color: offline ? Colors.blue : Colors.grey,
+                          color: offline ? AppColors.primaryBlue : Colors.grey,
                         ),
                       ),
                     ),
