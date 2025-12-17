@@ -13,8 +13,8 @@ class LocalDatabase {
   static final LocalDatabase instance = LocalDatabase._internal();
 
   static const String _dbName = 'seek_offline.db';
-  // 升级到 v2：新增 form_snapshot/session_state/temp_cache/sync_meta 表
-  static const int _dbVersion = 2;
+  // 升级到 v3：在原有 ticket/station 等表基础上，新增 trail_trip/travel_plan/gear_asset 表
+  static const int _dbVersion = 3;
 
   Database? _db;
 
@@ -44,6 +44,9 @@ class LocalDatabase {
         // 版本迁移：按需补充缺失表结构（幂等）
         if (oldVersion < 2) {
           await _migrateToV2(db);
+        }
+        if (oldVersion < 3) {
+          await _migrateToV3(db);
         }
       },
     );
@@ -128,6 +131,49 @@ class LocalDatabase {
         value TEXT
       );
     ''');
+
+    // v3 新增：足迹（trail）摘要信息
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS trail_trip (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        location TEXT,
+        dateLabel TEXT,
+        durationText TEXT,
+        distanceText TEXT,
+        photosText TEXT,
+        description TEXT,
+        coverImageUrl TEXT,
+        galleryImagesJson TEXT
+      );
+    ''');
+
+    // v3 新增：旅行计划时间线
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS travel_plan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        dateRange TEXT,
+        daysLabel TEXT,
+        budgetLabel TEXT,
+        companionsLabel TEXT,
+        createdAt INTEGER
+      );
+    ''');
+
+    // v3 新增：装备资产统计（示例数据）
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS gear_asset (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        brand TEXT,
+        purchaseDateLabel TEXT,
+        price REAL,
+        usageCount INTEGER,
+        imageUrl TEXT,
+        status TEXT
+      );
+    ''');
   }
 
   /// 迁移到 v2：补充新增表结构（幂等）
@@ -158,6 +204,49 @@ class LocalDatabase {
       CREATE TABLE IF NOT EXISTS sync_meta (
         key TEXT PRIMARY KEY,
         value TEXT
+      );
+    ''');
+  }
+
+  /// 迁移到 v3：新增 trail_trip / travel_plan / gear_asset 表（幂等）
+  Future<void> _migrateToV3(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS trail_trip (
+        id TEXT PRIMARY KEY,
+        title TEXT,
+        location TEXT,
+        dateLabel TEXT,
+        durationText TEXT,
+        distanceText TEXT,
+        photosText TEXT,
+        description TEXT,
+        coverImageUrl TEXT,
+        galleryImagesJson TEXT
+      );
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS travel_plan (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        dateRange TEXT,
+        daysLabel TEXT,
+        budgetLabel TEXT,
+        companionsLabel TEXT,
+        createdAt INTEGER
+      );
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS gear_asset (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        brand TEXT,
+        purchaseDateLabel TEXT,
+        price REAL,
+        usageCount INTEGER,
+        imageUrl TEXT,
+        status TEXT
       );
     ''');
   }

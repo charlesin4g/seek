@@ -561,9 +561,6 @@ class _HealthStatsCardState extends State<HealthStatsCard> {
   }
 }
 
-// ==========================================
-// 2. 修改后的 HomePage 组件
-// ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.onNavigate});
   final void Function(int) onNavigate;

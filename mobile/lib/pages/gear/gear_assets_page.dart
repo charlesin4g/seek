@@ -2,19 +2,23 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_colors.dart';
 import '../../utils/responsive.dart';
+import '../../services/repository/gear_assets_repository.dart';
 import 'add_gear_page.dart';
 
-class GearAssetsPage extends StatelessWidget {
+class GearAssetsPage extends StatefulWidget {
   const GearAssetsPage({super.key});
 
   @override
+  State<GearAssetsPage> createState() => _GearAssetsPageState();
+}
+
+class _GearAssetsPageState extends State<GearAssetsPage> {
+  void refreshAssets() {
+    setState(() {});
+  }
+
+  @override
   Widget build(BuildContext context) {
-    const List<_MockGearAsset> assets = _mockGearAssets;
-    final int totalCount = assets.length;
-    final double totalValue = assets.fold(0, (sum, e) => sum + e.price);
-
-    final String totalValueLabel = '¥${totalValue.toStringAsFixed(0)}';
-
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -52,58 +56,89 @@ class GearAssetsPage extends StatelessWidget {
           centerTitle: true,
         ),
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: Responsive.responsivePadding(context).copyWith(bottom: 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 总价值卡片
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF123A7A),
-                    borderRadius: AppBorderRadius.extraLarge,
-                    boxShadow: const [AppShadows.medium],
+          child: FutureBuilder<List<GearAssetRecord>>(
+            future: GearAssetsRepository.instance.getAllAssets(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final List<GearAssetRecord> assets =
+                  snapshot.data ?? const <GearAssetRecord>[];
+              final int totalCount = assets.length;
+              final double totalValue =
+                  assets.fold(0, (num sum, GearAssetRecord e) => sum + e.price);
+              final String totalValueLabel = '¥${totalValue.toStringAsFixed(0)}';
+
+              if (assets.isEmpty) {
+                return Center(
+                  child: Text(
+                    '暂无装备，点击卡片添加一件吧',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: AppFontSizes.body,
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '总价值',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: AppFontSizes.body,
-                        ),
+                );
+              }
+
+              return SingleChildScrollView(
+                padding:
+                    Responsive.responsivePadding(context).copyWith(bottom: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 总价值卡片
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 18,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        totalValueLabel,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 32,
-                          fontWeight: FontWeight.w800,
-                        ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF123A7A),
+                        borderRadius: AppBorderRadius.extraLarge,
+                        boxShadow: const [AppShadows.medium],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '共 $totalCount 件装备',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.8),
-                          fontSize: AppFontSizes.body,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '总价值',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: AppFontSizes.body,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            totalValueLabel,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 32,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '共 $totalCount 件装备',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.8),
+                              fontSize: AppFontSizes.body,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    // 分类筛选条（静态 UI）
+                    const _CategoryFilterBar(),
+                    const SizedBox(height: 16),
+                    // 装备网格
+                    _GearGrid(assets: assets),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                // 分类筛选条（静态 UI）
-                const _CategoryFilterBar(),
-                const SizedBox(height: 16),
-                // 装备网格
-                _GearGrid(assets: assets),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
@@ -179,7 +214,7 @@ class _CategoryChip extends StatelessWidget {
 class _GearGrid extends StatelessWidget {
   const _GearGrid({required this.assets});
 
-  final List<_MockGearAsset> assets;
+  final List<GearAssetRecord> assets;
 
   @override
   Widget build(BuildContext context) {
@@ -207,15 +242,135 @@ class _GearGrid extends StatelessWidget {
 class _GearAssetCard extends StatelessWidget {
   const _GearAssetCard({required this.asset});
 
-  final _MockGearAsset asset;
+  final GearAssetRecord asset;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('装备详情功能开发中')), 
+      onTap: () async {
+        final TextEditingController nameController =
+            TextEditingController(text: asset.name);
+        final TextEditingController priceController =
+            TextEditingController(text: asset.price.toStringAsFixed(0));
+        final TextEditingController usageCountController =
+            TextEditingController(text: asset.usageCount.toString());
+        final TextEditingController purchaseDateController =
+            TextEditingController(text: asset.purchaseDateLabel);
+        String status = asset.status.isNotEmpty ? asset.status : '在用';
+
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('编辑装备'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: '名称'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: '价格 (¥)'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: usageCountController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: '使用次数'),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: purchaseDateController,
+                      decoration:
+                          const InputDecoration(labelText: '购入日期标签'),
+                    ),
+                    const SizedBox(height: 8),
+                    DropdownButtonFormField<String>(
+                      initialValue: status,
+                      decoration: const InputDecoration(labelText: '状态'),
+                      items: const <DropdownMenuItem<String>>[
+                        DropdownMenuItem<String>(
+                          value: '在用',
+                          child: Text('在用'),
+                        ),
+                        DropdownMenuItem<String>(
+                          value: '备用',
+                          child: Text('备用'),
+                        ),
+                        DropdownMenuItem<String>(
+                          value: '已出手',
+                          child: Text('已出手'),
+                        ),
+                      ],
+                      onChanged: (String? value) {
+                        if (value != null) {
+                          status = value;
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                  },
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    final String name = nameController.text.trim();
+                    if (name.isEmpty) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(
+                        const SnackBar(content: Text('名称不能为空')),
+                      );
+                      return;
+                    }
+
+                    final double? newPrice =
+                        double.tryParse(priceController.text.trim());
+                    final int? newUsage =
+                        int.tryParse(usageCountController.text.trim());
+
+                    await GearAssetsRepository.instance.updateAsset(
+                      id: asset.id,
+                      name: name,
+                      brand: asset.brand,
+                      purchaseDateLabel:
+                          purchaseDateController.text.trim(),
+                      price: newPrice ?? asset.price,
+                      usageCount: newUsage ?? asset.usageCount,
+                      status: status,
+                    );
+
+                    final _GearAssetsPageState? state =
+                        context.findAncestorStateOfType<_GearAssetsPageState>();
+                    state?.refreshAssets();
+
+                    Navigator.of(dialogContext).pop();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('已更新装备信息')),
+                    );
+                  },
+                  child: const Text('保存'),
+                ),
+              ],
+            );
+          },
         );
+
+        nameController.dispose();
+        priceController.dispose();
+        usageCountController.dispose();
+        purchaseDateController.dispose();
       },
       borderRadius: AppBorderRadius.extraLarge,
       child: ClipRRect(
@@ -336,11 +491,16 @@ class _AddGearCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () {
-        Navigator.push(
+      onTap: () async {
+        final bool? added = await Navigator.push<bool>(
           context,
           MaterialPageRoute(builder: (_) => const AddEquipmentPage()),
         );
+        if (added == true) {
+          final _GearAssetsPageState? state =
+              context.findAncestorStateOfType<_GearAssetsPageState>();
+          state?.refreshAssets();
+        }
       },
       borderRadius: AppBorderRadius.extraLarge,
       child: Ink(
@@ -381,55 +541,3 @@ class _AddGearCard extends StatelessWidget {
   }
 }
 
-class _MockGearAsset {
-  const _MockGearAsset({
-    required this.name,
-    required this.brand,
-    required this.purchaseDateLabel,
-    required this.price,
-    required this.usageCount,
-    required this.imageUrl,
-  });
-
-  final String name;
-  final String brand;
-  final String purchaseDateLabel;
-  final double price;
-  final int usageCount;
-  final String imageUrl;
-}
-
-const List<_MockGearAsset> _mockGearAssets = [
-  _MockGearAsset(
-    name: 'Osprey Atmos AG 65',
-    brand: 'Osprey',
-    purchaseDateLabel: '2024-01-15',
-    price: 2680,
-    usageCount: 12,
-    imageUrl: 'https://images.pexels.com/photos/884788/pexels-photo-884788.jpeg?auto=compress&cs=tinysrgb&w=800',
-  ),
-  _MockGearAsset(
-    name: '北面四季帐篷',
-    brand: 'The North Face',
-    purchaseDateLabel: '2023-11-20',
-    price: 3200,
-    usageCount: 8,
-    imageUrl: 'https://images.pexels.com/photos/618848/pexels-photo-618848.jpeg?auto=compress&cs=tinysrgb&w=800',
-  ),
-  _MockGearAsset(
-    name: '防水冲锋衣',
-    brand: "Arc'teryx",
-    purchaseDateLabel: '2023-09-05',
-    price: 1800,
-    usageCount: 15,
-    imageUrl: 'https://images.pexels.com/photos/4492042/pexels-photo-4492042.jpeg?auto=compress&cs=tinysrgb&w=800',
-  ),
-  _MockGearAsset(
-    name: '户外登山表',
-    brand: 'Garmin',
-    purchaseDateLabel: '2023-06-12',
-    price: 2380,
-    usageCount: 20,
-    imageUrl: 'https://images.pexels.com/photos/2774062/pexels-photo-2774062.jpeg?auto=compress&cs=tinysrgb&w=800',
-  ),
-];

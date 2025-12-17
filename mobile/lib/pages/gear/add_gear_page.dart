@@ -7,6 +7,7 @@ import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
 import '../../widgets/selector_field.dart';
 import '../../services/gear_api.dart';
+import '../../services/repository/gear_assets_repository.dart';
 
 class AddEquipmentPage extends StatefulWidget {
   const AddEquipmentPage({super.key});
@@ -502,11 +503,11 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
             );
           },
         );
-        
+
         // 准备装备数据
-        final weight = double.tryParse(_weightController.text) ?? 0;
-        final price = double.tryParse(_priceController.text) ?? 0;
-        
+        final double weight = double.tryParse(_weightController.text) ?? 0;
+        final double price = double.tryParse(_priceController.text) ?? 0;
+
         // 根据重量单位转换为克
         double weightInGrams = weight;
         if (_selectedWeightUnit == 'kg') {
@@ -514,38 +515,54 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
         } else if (_selectedWeightUnit == '斤') {
           weightInGrams = weight * 500;
         }
-        
+
         // 从API获取的品牌列表中查找对应的英文名称
         String brandCode = 'Other';
-        final selectedBrandObj = _brands.firstWhere(
+        final Brand selectedBrandObj = _brands.firstWhere(
           (brand) => brand.displayName == _selectedBrand,
           orElse: () => const Brand(name: 'Other', displayName: '其他'),
         );
         brandCode = selectedBrandObj.name;
-        
+
         // 创建API请求数据
-        final gearData = {
+        final Map<String, dynamic> gearData = {
           'name': _nameController.text,
           'description': '',
           'category': _selectedCategory,
           'brand': brandCode,
-          'color': '',  // 默认值，可以在表单中添加颜色选择
-          'size': '',     // 默认值，可以在表单中添加尺寸选择
+          'color': '', // 默认值，可以在表单中添加颜色选择
+          'size': '', // 默认值，可以在表单中添加尺寸选择
           'weight': weightInGrams.toInt(),
           'purchaseDate': _selectedDate.toIso8601String(),
           'price': price,
-          'essential': true,  // 默认值，可以在表单中添加是否必需选择
+          'essential': true, // 默认值，可以在表单中添加是否必需选择
           'quantity': _quantity,
-          'owner': 1  // 默认用户ID，实际应用中应该从用户会话中获取
+          'owner': 1, // 默认用户ID，实际应用中应该从用户会话中获取
         };
-        
+
         // 调用API保存装备数据
-        final gearApi = GearApi();
+        final GearApi gearApi = GearApi();
         await gearApi.addGear(gearData);
-        
+
+        // 同步写入本地 SQLite 资产表，用于“我的装备”统计视图
+        final String purchaseDateLabel =
+            '${_selectedDate.year.toString().padLeft(4, '0')}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
+        final String displayBrand = selectedBrandObj.displayName;
+        const String fallbackImageUrl =
+            'https://images.pexels.com/photos/884788/pexels-photo-884788.jpeg?auto=compress&cs=tinysrgb&w=800';
+
+        await GearAssetsRepository.instance.addAsset(
+          name: _nameController.text.trim(),
+          brand: displayBrand,
+          purchaseDateLabel: purchaseDateLabel,
+          price: price,
+          usageCount: 0,
+          imageUrl: fallbackImageUrl,
+        );
+
         // 关闭加载指示器
         Navigator.pop(context);
-        
+
         // 显示成功消息
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -553,13 +570,13 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
             backgroundColor: Colors.green,
           ),
         );
-        
+
         // 返回上一页并通知上层刷新
         Navigator.pop(context, true);
       } catch (e) {
         // 关闭加载指示器
         Navigator.pop(context);
-        
+
         // 显示错误消息
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

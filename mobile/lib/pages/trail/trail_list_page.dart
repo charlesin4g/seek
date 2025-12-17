@@ -2,95 +2,13 @@ import 'package:flutter/material.dart';
 
 import '../../config/app_colors.dart';
 import '../../utils/responsive.dart';
+import '../../services/repository/trail_repository.dart';
 import 'trail_detail_page.dart';
 import 'trail_trip.dart';
 
 class TrailListPage extends StatelessWidget {
   const TrailListPage({super.key});
 
-  static const List<TrailTrip> _trips = [
-    TrailTrip(
-      id: 'alpine-summit',
-      title: 'Alpine Summit Hike',
-      location: 'Swiss Alps',
-      dateLabel: 'Oct 12, 2024',
-      durationText: '4h 30m',
-      distanceText: '12.5 km',
-      photosText: '12 Photos',
-      description:
-          'An unforgettable journey through the heart of the Alps. We started at dawn to catch the sunrise over the peaks. The trail was challenging but the views were absolutely worth every step.',
-      coverImageUrl:
-          'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/1659438/pexels-photo-1659438.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/2252039/pexels-photo-2252039.jpeg?auto=compress&cs=tinysrgb&w=800',
-      ],
-    ),
-    TrailTrip(
-      id: 'misty-forest',
-      title: 'Misty Forest Trail',
-      location: 'Black Forest',
-      dateLabel: 'Nov 05, 2024',
-      durationText: '2h 15m',
-      distanceText: '8.2 km',
-      photosText: '12 Photos',
-      description:
-          'A tranquil walk among towering pines and soft moss paths. Light fog rolled through the forest, making every beam of sunlight feel magical.',
-      coverImageUrl:
-          'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/15286/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/167684/pexels-photo-167684.jpeg?auto=compress&cs=tinysrgb&w=800',
-      ],
-    ),
-    TrailTrip(
-      id: 'coastal-cliff',
-      title: 'Coastal Cliff Walk',
-      location: 'Dover Coast',
-      dateLabel: 'Sep 20, 2024',
-      durationText: '3h 00m',
-      distanceText: '10.0 km',
-      photosText: '12 Photos',
-      description:
-          'A breezy coastal walk along dramatic white cliffs and turquoise waters. Perfect mix of ocean views, sea breeze and gentle ascents.',
-      coverImageUrl:
-          'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-      galleryImageUrls: [
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/210205/pexels-photo-210205.jpeg?auto=compress&cs=tinysrgb&w=800',
-        'https://images.pexels.com/photos/462162/pexels-photo-462162.jpeg?auto=compress&cs=tinysrgb&w=800',
-      ],
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -107,12 +25,32 @@ class TrailListPage extends StatelessWidget {
           centerTitle: true,
         ),
         body: SafeArea(
-          child: ListView.builder(
-            padding: Responsive.responsivePadding(context),
-            itemCount: _trips.length,
-            itemBuilder: (context, index) {
-              final trip = _trips[index];
-              return _TrailCard(trip: trip);
+          child: FutureBuilder<List<TrailTrip>>(
+            future: TrailRepository.instance.getAllTrips(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final trips = snapshot.data ?? const <TrailTrip>[];
+              if (trips.isEmpty) {
+                return const Center(
+                  child: Text(
+                    '暂无足迹，先去添加一条吧',
+                    style: TextStyle(
+                      fontSize: AppFontSizes.body,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                );
+              }
+              return ListView.builder(
+                padding: Responsive.responsivePadding(context),
+                itemCount: trips.length,
+                itemBuilder: (context, index) {
+                  final trip = trips[index];
+                  return _TrailCard(trip: trip);
+                },
+              );
             },
           ),
         ),
