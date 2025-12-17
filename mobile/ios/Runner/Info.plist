@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>我们需要访问您的健康数据以显示步数和心率。</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>我们需要访问您的健康数据以显示步数和心率。</string>
+	<key>NSMotionUsageDescription</key>
+	<string>我们需要访问运动数据以计算步数。</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

@@ -52,8 +52,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
               // 使用 OssService 解析私有头像 URL（可生成临时签名访问）
               final avatar = userProfile['avatarUrl'] ?? userProfile['avatar'];
               _avatarUrl = OssService().resolvePrivateUrl(avatar?.toString());
-              // 使用 OssService 解析私有背景图 URL（可生成临时签名访问）
-              final bg = userProfile['backgroundUrl'] ?? userProfile['background'];
             });
           }
         } else {

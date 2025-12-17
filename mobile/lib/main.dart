@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
-import 'pages/gear/gear_page.dart';
 import 'pages/login_page.dart';
-import 'pages/user/profile_page.dart';
+import 'pages/user/user_overview_page.dart';
 import 'pages/trail/trail_list_page.dart';
 import 'pages/trail/trail_map_page.dart';
+import 'pages/plan/travel_plan_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_api.dart';
 import 'services/env.dart';
 import 'services/storage_service.dart';
 import 'config/app_colors.dart';
 import 'utils/responsive.dart';
+import 'package:health/health.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   // 初始化绑定，确保可以设置错误处理器
@@ -24,11 +26,12 @@ void main() {
   };
 
   // 捕获异步未处理错误（Future、微任务等）并打印到控制台
-  WidgetsBinding.instance.platformDispatcher.onError = (Object error, StackTrace stack) {
-    debugPrint('Uncaught async error: $error');
-    debugPrintStack(stackTrace: stack);
-    return true; // 标记已处理，避免重复上报
-  };
+  WidgetsBinding.instance.platformDispatcher.onError =
+      (Object error, StackTrace stack) {
+        debugPrint('Uncaught async error: $error');
+        debugPrintStack(stackTrace: stack);
+        return true; // 标记已处理，避免重复上报
+      };
 
   runApp(const MyApp());
 }
@@ -45,9 +48,16 @@ class MyApp extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
+                const Icon(
+                  Icons.error_outline,
+                  size: 40,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(height: 12),
-                const Text('页面加载出错', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text(
+                  '页面加载出错',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 8),
                 Text(details.exceptionAsString(), textAlign: TextAlign.center),
               ],
@@ -116,12 +126,33 @@ class MyApp extends StatelessWidget {
         ),
         // 文本主题
         textTheme: const TextTheme(
-          bodySmall: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textSecondary),
-          bodyMedium: TextStyle(fontSize: AppFontSizes.bodyLarge, color: AppColors.textPrimary),
-          bodyLarge: TextStyle(fontSize: AppFontSizes.bodyLarge, color: AppColors.textPrimary),
-          titleSmall: TextStyle(fontSize: AppFontSizes.subtitle, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-          titleMedium: TextStyle(fontSize: AppFontSizes.title, color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-          titleLarge: TextStyle(fontSize: AppFontSizes.titleLarge, color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          bodySmall: TextStyle(
+            fontSize: AppFontSizes.body,
+            color: AppColors.textSecondary,
+          ),
+          bodyMedium: TextStyle(
+            fontSize: AppFontSizes.bodyLarge,
+            color: AppColors.textPrimary,
+          ),
+          bodyLarge: TextStyle(
+            fontSize: AppFontSizes.bodyLarge,
+            color: AppColors.textPrimary,
+          ),
+          titleSmall: TextStyle(
+            fontSize: AppFontSizes.subtitle,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          titleMedium: TextStyle(
+            fontSize: AppFontSizes.title,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.w600,
+          ),
+          titleLarge: TextStyle(
+            fontSize: AppFontSizes.titleLarge,
+            color: AppColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         // 输入框主题
         inputDecorationTheme: InputDecorationTheme(
@@ -146,7 +177,10 @@ class MyApp extends StatelessWidget {
           backgroundColor: AppColors.backgroundWhite,
           indicatorColor: AppColors.primaryLightBlue,
           labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(fontSize: AppFontSizes.body, color: AppColors.textSecondary),
+            const TextStyle(
+              fontSize: AppFontSizes.body,
+              color: AppColors.textSecondary,
+            ),
           ),
           iconTheme: WidgetStateProperty.all(
             const IconThemeData(color: AppColors.textSecondary),
@@ -157,9 +191,7 @@ class MyApp extends StatelessWidget {
           backgroundColor: AppColors.secondaryGreen,
           foregroundColor: AppColors.textWhite,
           elevation: 4,
-          shape: RoundedRectangleBorder(
-            borderRadius: AppBorderRadius.large,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: AppBorderRadius.large),
         ),
         // 对话框主题
         dialogTheme: DialogThemeData(
@@ -270,17 +302,14 @@ class _HomeTabsState extends State<HomeTabs> {
     HomePage(onNavigate: (index) => setState(() => _currentIndex = index)),
     const TrailListPage(),
     const TrailMapPage(),
-    const GearPage(),
-    const UserProfilePage(),
+    const TravelPlanPage(),
+    const UserOverviewPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (int index) {
@@ -317,7 +346,7 @@ class _HomeTabsState extends State<HomeTabs> {
         indicatorColor: AppColors.primaryLightBlue,
         elevation: 0,
         shadowColor: Colors.transparent,
-      )
+      ),
     );
   }
 }
@@ -354,13 +383,187 @@ class FullScreenBackground extends StatelessWidget {
             },
           ),
         ),
-        Positioned.fill(
-          child: child,
+        Positioned.fill(child: child),
+      ],
+    );
+  }
+}
+
+class HealthStatsCard extends StatefulWidget {
+  const HealthStatsCard({super.key});
+
+  @override
+  State<HealthStatsCard> createState() => _HealthStatsCardState();
+}
+
+class _HealthStatsCardState extends State<HealthStatsCard> {
+  // 定义状态变量，默认显示 '--'
+  String _steps = '--';
+  String _heartRate = '--';
+  String _distance = '--';
+
+  final Health _health = Health();
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHealthData();
+  }
+
+  Future<void> _fetchHealthData() async {
+    // 定义需要获取的数据类型
+    var types = [
+      HealthDataType.STEPS,
+      HealthDataType.HEART_RATE,
+      HealthDataType.DISTANCE_DELTA,
+    ];
+
+    try {
+      // Android 需要 Activity Recognition 权限
+      await Permission.activityRecognition.request();
+      // iOS/Android 需要定位权限 (某些健康数据依赖)
+      await Permission.location.request();
+
+      // 请求 Health 授权
+      bool requested = await _health.requestAuthorization(types);
+
+      if (requested) {
+        var now = DateTime.now();
+        var midnight = DateTime(now.year, now.month, now.day);
+
+        // --- 1. 获取步数 ---
+        int? steps = await _health.getTotalStepsInInterval(midnight, now);
+
+        // --- 2. 获取其他数据 (心率、距离) ---
+        List<HealthDataPoint> healthData = await _health.getHealthDataFromTypes(
+          types: [HealthDataType.HEART_RATE, HealthDataType.DISTANCE_DELTA],
+          startTime: midnight,
+          endTime: now,
+        );
+
+        // 处理心率 (取最近一次)
+        String hrValue = '--';
+        var heartRatePoints = healthData
+            .where((e) => e.type == HealthDataType.HEART_RATE)
+            .toList();
+
+        if (heartRatePoints.isNotEmpty) {
+          heartRatePoints.sort((a, b) => b.dateTo.compareTo(a.dateTo));
+          // 注意：不同版本 Health 包 value 类型不同，这里转 string 再 parse 比较稳妥
+          double val =
+              double.tryParse(heartRatePoints.first.value.toString()) ?? 0;
+          hrValue = val.toInt().toString();
+        }
+
+        // 处理距离 (累加当天)
+        var distancePoints = healthData
+            .where((e) => e.type == HealthDataType.DISTANCE_DELTA)
+            .toList();
+        double totalDistanceMeters = 0;
+        for (var point in distancePoints) {
+          totalDistanceMeters += double.tryParse(point.value.toString()) ?? 0;
+        }
+        String distanceValue =
+            "${(totalDistanceMeters / 1000).toStringAsFixed(2)} km";
+
+        if (mounted) {
+          setState(() {
+            _steps = steps?.toString() ?? "0";
+            _heartRate = hrValue;
+            _distance = distanceValue;
+          });
+        }
+      } else {
+        debugPrint("用户拒绝了健康权限授权");
+      }
+    } catch (e) {
+      debugPrint("获取健康数据异常: $e");
+    }
+  }
+
+  // 构建单个统计子项的私有方法
+  Widget _buildStatItem({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: AppBorderRadius.extraLarge,
+          boxShadow: const [AppShadows.light],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: color.withOpacity(0.12),
+              child: Icon(icon, size: 18, color: color),
+            ),
+            const SizedBox(height: 8),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  fontSize: AppFontSizes.titleLarge,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: AppFontSizes.body,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // 这里将三个卡片组合成一行
+    return Row(
+      children: [
+        _buildStatItem(
+          icon: Icons.directions_walk,
+          label: '步数',
+          value: _steps,
+          color: AppColors.secondaryGreen,
+        ),
+        _buildStatItem(
+          icon: Icons.favorite,
+          label: '心率',
+          value: _heartRate,
+          color: const Color.fromARGB(255, 237, 7, 7),
+        ),
+        _buildStatItem(
+          icon: Icons.access_time,
+          label: '距离',
+          value: _distance,
+          color: AppColors.warning,
         ),
       ],
     );
   }
 }
+
+// ==========================================
+// 2. 修改后的 HomePage 组件
+// ==========================================
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.onNavigate});
   final void Function(int) onNavigate;
@@ -368,138 +571,14 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cached = StorageService().getCachedUserSync();
-    final displayName = (cached?['displayName'] ?? cached?['username'] ?? AuthService().currentUser ?? '旅行者').toString();
+    final displayName =
+        (cached?['displayName'] ??
+                cached?['username'] ??
+                AuthService().currentUser ??
+                '旅行者')
+            .toString();
 
-    Widget buildStatCard({
-      required IconData icon,
-      required String label,
-      required String value,
-      required Color color,
-    }) {
-      return Expanded(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 4),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundWhite,
-            borderRadius: AppBorderRadius.extraLarge,
-            boxShadow: const [AppShadows.light],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: color.withOpacity(0.12),
-                child: Icon(icon, size: 18, color: color),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: AppFontSizes.titleLarge,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: AppFontSizes.body,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    Widget buildSegmentChip(String label, {bool selected = false}) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryDarkBlue : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: selected ? AppColors.textWhite : AppColors.textSecondary,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-          ),
-        ),
-      );
-    }
-
-    Widget buildTrendCard() {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundWhite,
-          borderRadius: AppBorderRadius.extraLarge,
-          boxShadow: const [AppShadows.light],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  '心率趋势',
-                  style: TextStyle(
-                    fontSize: AppFontSizes.subtitle,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Row(
-                  children: [
-                    buildSegmentChip('今日', selected: true),
-                    const SizedBox(width: 4),
-                    buildSegmentChip('本周'),
-                    const SizedBox(width: 4),
-                    buildSegmentChip('本月'),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 120,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(child: _TrendBar(heightFactor: 0.4)),
-                  Expanded(child: _TrendBar(heightFactor: 0.75)),
-                  Expanded(child: _TrendBar(heightFactor: 0.6)),
-                  Expanded(child: _TrendBar(heightFactor: 0.9)),
-                  Expanded(child: _TrendBar(heightFactor: 0.55)),
-                  Expanded(child: _TrendBar(heightFactor: 0.8)),
-                  Expanded(child: _TrendBar(heightFactor: 0.5)),
-                ],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text('08:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
-                Text('10:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
-                Text('12:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
-                Text('16:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
-                Text('20:00', style: TextStyle(fontSize: AppFontSizes.body, color: AppColors.textTertiary)),
-              ],
-            ),
-          ],
-        ),
-      );
-    }
-
+    // 行程卡片构建方法保持不变
     Widget buildTripCard({
       required String from,
       required String to,
@@ -524,7 +603,11 @@ class HomePage extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: AppColors.primaryGradient,
               ),
-              child: const Icon(Icons.flight_takeoff, size: 20, color: AppColors.textWhite),
+              child: const Icon(
+                Icons.flight_takeoff,
+                size: 20,
+                color: AppColors.textWhite,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -577,138 +660,114 @@ class HomePage extends StatelessWidget {
         children: [
           const Positioned.fill(
             child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: AppColors.backgroundGradient,
-              ),
+              decoration: BoxDecoration(gradient: AppColors.backgroundGradient),
             ),
           ),
           SafeArea(
             child: ResponsiveContainer(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 12),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+              child: Column(
+                children: [
+                  // 头部区域
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '早安，旅行者',
-                                style: TextStyle(
+                        const SizedBox(height: 12),
+                        // 问候语
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    '早安，旅行者',
+                                    style: TextStyle(
+                                      fontSize: AppFontSizes.subtitle,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    '愿每次旅程元气满满！',
+                                    style: TextStyle(
+                                      fontSize: Responsive.responsiveFontSize(
+                                        context,
+                                        AppFontSizes.body,
+                                      ),
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            CircleAvatar(
+                              radius: 20,
+                              backgroundColor: AppColors.backgroundWhite,
+                              child: Text(
+                                displayName.isNotEmpty ? displayName[0] : '旅',
+                                style: const TextStyle(
                                   fontSize: AppFontSizes.subtitle,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
+                                  color: AppColors.primaryDarkBlue,
                                 ),
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '愿每次旅程元气满满！',
-                                style: TextStyle(
-                                  fontSize: Responsive.responsiveFontSize(context, AppFontSizes.body),
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppColors.backgroundWhite,
-                          child: Text(
-                            displayName.isNotEmpty ? displayName[0] : '旅',
-                            style: const TextStyle(
+                        const SizedBox(height: 20),
+
+                        // Row 2: 统计卡片 (直接使用封装好的组件)
+                        const HealthStatsCard(),
+
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                  // 下方滚动区域
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '即将出行',
+                            style: TextStyle(
                               fontSize: AppFontSizes.subtitle,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.primaryDarkBlue,
+                              color: AppColors.textPrimary,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    Row(
-                      children: [
-                        buildStatCard(
-                          icon: Icons.directions_walk,
-                          label: '步数',
-                          value: '12,847',
-                          color: AppColors.secondaryGreen,
-                        ),
-                        buildStatCard(
-                          icon: Icons.favorite,
-                          label: '心率',
-                          value: '8.6',
-                          color: AppColors.primaryDarkBlue,
-                        ),
-                        buildStatCard(
-                          icon: Icons.access_time,
-                          label: '时长',
-                          value: '2h 35m',
-                          color: AppColors.warning,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    buildTrendCard(),
-                    const SizedBox(height: 24),
-                    const Text(
-                      '即将出行',
-                      style: TextStyle(
-                        fontSize: AppFontSizes.subtitle,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
+                          const SizedBox(height: 12),
+                          buildTripCard(
+                            from: '北京',
+                            to: '西安',
+                            detail: '明天 14:30 · 三等座 12车06F',
+                            badgeText: '18小时',
+                            badgeColor: AppColors.warning,
+                          ),
+                          buildTripCard(
+                            from: '西安',
+                            to: '拉萨',
+                            detail: '3月15日 09:45 · 软卧 32A',
+                            badgeText: '5天',
+                            badgeColor: AppColors.secondaryGreen,
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    buildTripCard(
-                      from: '北京',
-                      to: '西安',
-                      detail: '明天 14:30 · 三等座 12车06F',
-                      badgeText: '18小时',
-                      badgeColor: AppColors.warning,
-                    ),
-                    buildTripCard(
-                      from: '西安',
-                      to: '拉萨',
-                      detail: '3月15日 09:45 · 软卧 32A',
-                      badgeText: '5天',
-                      badgeColor: AppColors.secondaryGreen,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _TrendBar extends StatelessWidget {
-  const _TrendBar({required this.heightFactor});
-
-  final double heightFactor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.bottomCenter,
-      child: FractionallySizedBox(
-        heightFactor: heightFactor,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            gradient: AppColors.primaryGradient,
-          ),
-        ),
       ),
     );
   }
