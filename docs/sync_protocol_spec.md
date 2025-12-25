@@ -5,10 +5,6 @@
 - 压缩与加密传输；
 - 状态报告与错误处理；
 
-## 变更日志
-- 表：`change_log(id, entity, entityId, op, payload, ts)`；
-- 作用：记录离线期间的本地变更；
-
 ## 增量拉取/推送
 - 客户端维护 `_lastSyncedLogId`；
 - 推送：按 `id > lastId` 逐条推送；

@@ -3,7 +3,6 @@ package com.charles.seek.integration;
 import com.charles.seek.dto.user.request.CreateUserRequest;
 import com.charles.seek.dto.user.request.UpdateUserRequest;
 import com.charles.seek.dto.user.response.UserProfile;
-import com.charles.seek.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,9 +33,6 @@ class UserIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Test
     void userLifeCycle_success() throws Exception {

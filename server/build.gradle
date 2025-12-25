@@ -29,6 +29,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA 支持
     runtimeOnly 'org.postgresql:postgresql'  // PostgreSQL 驱动
 
+    // ===== RustFS (S3 兼容) 客户端 =====
+    implementation 'software.amazon.awssdk:s3:2.25.54'
+
     // ===== Lombok =====
     compileOnly 'org.projectlombok:lombok'  // Lombok 注解
     annotationProcessor 'org.projectlombok:lombok'  // 注解处理器

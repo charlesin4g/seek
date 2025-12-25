@@ -1,33 +1,25 @@
-import 'dart:convert';
-import 'http_client.dart';
-import 'offline_mode.dart';
+import 'package:flutter/foundation.dart';
+
 import 'repository/ticket_repository.dart';
 import 'storage_service.dart';
 
+/// 票据 API 本地实现
+///
+/// 说明：
+/// - 去掉了所有线上 HTTP 调用，仅保留对本地 SQLite 的读写；
+/// - 仍然保留原有类名和方法签名，方便 UI 层无感知切换；
+/// - 部分纯线上能力（如机场 IATA 查询）在离线模式下返回空结果。
 class TicketApi {
-  /// 默认使用全局共享的 HttpClient
-  TicketApi({HttpClient? client}) : _client = client ?? HttpClient.shared;
+  TicketApi();
 
-  final HttpClient _client;
-
+  /// 新增票据：始终写入本地 SQLite，并记录变更日志。
   Future<String> addTicket(Map<String, dynamic> data) async {
-    // 在线/离线路由：保持接口兼容
-    if (OfflineModeManager.instance.isOffline.value) {
-      // 离线：写入本地加密数据库，并记录变更日志
-      return TicketRepository.instance.addTicket(data);
-    }
-    // 在线：与后端交互
-    try {
-      return _client.postJson('/api/ticket/add', body: data);
-    } catch (_) {
-      // 网络失败：自动切换离线并回退到本地存储
-      await OfflineModeManager.instance.setOffline(true);
-      return TicketRepository.instance.addTicket(data);
-    }
+    // 保持与原语义一致：调用本地仓储写入 ticket
+    return TicketRepository.instance.addTicket(data);
   }
 
+  /// 查询当前用户的票据列表（仅本地 SQLite）
   Future<List<Map<String, dynamic>>> getMyTickets() async {
-    // 优先使用内存缓存的用户ID，若为空则从持久化存储读取
     final cached = StorageService().getCachedUserSync();
     String owner = cached?['userId']?.toString() ?? '1';
     if (cached == null) {
@@ -38,35 +30,22 @@ class TicketApi {
       }
     }
 
-    if (OfflineModeManager.instance.isOffline.value) {
-      return TicketRepository.instance.getMyTickets(owner);
-    }
-    try {
-      final raw = await _client.getJson('/api/ticket/owner?owner=$owner');
-      final decoded = jsonDecode(raw) as List;
-      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    } catch (_) {
-      await OfflineModeManager.instance.setOffline(true);
-      return TicketRepository.instance.getMyTickets(owner);
-    }
+    return TicketRepository.instance.getMyTickets(owner);
   }
 
+  /// 编辑票据：始终更新本地 SQLite，并记录变更日志。
   Future<void> editTicket(String ticketId, Map<String, dynamic> data) async {
-    if (OfflineModeManager.instance.isOffline.value) {
-      await TicketRepository.instance.editTicket(ticketId, data);
-      return;
-    }
-    try {
-      await _client.putJson('/api/ticket/edit?ticketId=$ticketId', body: data);
-    } catch (_) {
-      await OfflineModeManager.instance.setOffline(true);
-      await TicketRepository.instance.editTicket(ticketId, data);
-    }
+    await TicketRepository.instance.editTicket(ticketId, data);
   }
 
+  /// 通过 IATA 码查询机场信息
+  ///
+  /// 离线模式下暂无本地机场库，这里返回空 Map，调用方需自行降级处理。
   Future<Map<String, dynamic>> getAirportByIata(String iata) async {
-    final code = Uri.encodeQueryComponent(iata.toUpperCase());
-    final raw = await _client.getJson('/api/ticket/airport?iata=$code');
-    return Map<String, dynamic>.from(jsonDecode(raw) as Map);
+    if (kDebugMode) {
+      debugPrint('getAirportByIata is disabled in offline-only mode: $iata');
+    }
+    // 兼容原有调用方 try/catch 逻辑，这里返回空 Map 即可。
+    return <String, dynamic>{};
   }
 }

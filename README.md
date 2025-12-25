@@ -42,7 +42,6 @@ graph TD
 
 1. **离线模式**：Controller 调用 Service，Service 通过 Repository 写入本地 SQLCipher；读写完全脱离网络。
 2. **在线模式**：Service 检测到网络可用时，通过 HttpClient 调用 RESTful API，数据落盘 PostgreSQL。
-3. **同步触发**：网络恢复或用户手动下拉 → SyncService 读取本地 `change_log` → 增量推送 / 拉取 → 冲突解决（默认“后改优先”，可扩展手动合并）。
 
 ***
 
@@ -53,7 +52,6 @@ graph TD
 | 功能   | 实现方式                                                                                                |
 | ---- | --------------------------------------------------------------------------------------------------- |
 | 本地存储 | `sqflite_sqlcipher` 插件提供 SQLite + 256-bit AES 加密；表结构在应用首次启动时通过迁移脚本创建。                               |
-| 离线读写 | 所有写入先写 `change_log`（含 `changeId` / `table` / `operation` / `vectorClock`），再写业务表；读取直接走本地 Repository。 |
 | 同步引擎 | `SyncService` 根据向量时钟计算差异：本地 > 远程则推送，远程 > 本地则拉取；大文件分片上传，失败自动重试。                                      |
 | 网络探测 | 使用 `connectivity_plus` 监听网络状态；由 `RepositoryFactory` 自动切换本地或远程数据源，对 UI 无感知。                          |
 | 加密密钥 | 用户注册时输入口令，通过 `crypto` 库的 `pbkdf2` 生成 256-bit 密钥，存储于 `FlutterSecureStorage`，每次启动解密数据库。               |
@@ -72,9 +70,7 @@ graph TD
 | 功能          | 实现方式                                                                                               |
 | ----------- | -------------------------------------------------------------------------------------------------- |
 | RESTful API | 使用 Spring Web 提供资源风格接口，如 `GET /notes/{id}`、`POST /sync/diff`；统一封装返回体 `Result<T>`。                  |
-| 增量差异        | 服务端基于 PostgreSQL 的 `change_log` 表（结构与客户端一致），根据客户端传来的向量时钟生成差异 JSON，返回时 gzip 压缩。                     |
 | 冲突检测        | 收到客户端变更后，先对比服务端最新向量时钟，若出现“同一记录、同一版本窗口”双端修改，则标记冲突并返回冲突详情，由客户端决定合并策略。                                |
-| 文件分片        | 提供 `/sync/upload_chunk` 与 `/sync/merge_chunk` 接口；临时分片存储于本地磁盘或 S3 兼容对象存储，合并后生成文件记录并更新 `change_log`。 |
 | 数据加密        | 传输层强制 HTTPS；业务层可选字段级加密（客户端自行加解密，服务端仅透传）。                                                           |
 
 ***

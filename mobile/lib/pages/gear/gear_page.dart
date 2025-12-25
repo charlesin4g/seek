@@ -4,7 +4,7 @@ import '../../models/gear_statistics.dart';
 import '../../widgets/section_card.dart';
 import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
-import '../../services/gear_api.dart';
+import '../../services/repository/gear_assets_repository.dart';
 import 'add_gear_page.dart';
 import 'select_gear_page.dart';
 import '../login_page.dart';
@@ -20,7 +20,60 @@ class GearPage extends StatefulWidget {
   State<GearPage> createState() => _GearPageState();
 }
 
+class _GearPageData {
+  const _GearPageData({
+    required this.gearList,
+    required this.categoryDict,
+    required this.brandDict,
+  });
+
+  final List<Gear> gearList;
+  final Map<String, String> categoryDict;
+  final Map<String, String> brandDict;
+}
+
 class _GearPageState extends State<GearPage> {
+  Future<_GearPageData> _loadGearPageData() async {
+    final List<GearAssetRecord> assets =
+        await GearAssetsRepository.instance.getAllAssets();
+
+    final List<Gear> gearList = <Gear>[];
+    final Map<String, String> brandDict = <String, String>{};
+
+    for (final GearAssetRecord asset in assets) {
+      final DateTime date = _parsePurchaseDate(asset.purchaseDateLabel);
+      final String brand = asset.brand;
+      if (brand.isNotEmpty) {
+        brandDict[brand] = brand;
+      }
+      final String category = asset.category.isEmpty ? '全部装备' : asset.category;
+      gearList.add(
+        Gear(
+          id: asset.id.toString(),
+          name: asset.name,
+          category: category,
+          brand: brand,
+          weight: 0,
+          weightUnit: 'g',
+          price: asset.price,
+          quantity: 1,
+          purchaseDate: date,
+        ),
+      );
+    }
+
+    final Map<String, String> categoryDict = <String, String>{};
+    for (final Gear gear in gearList) {
+      categoryDict[gear.category] = gear.category;
+    }
+
+    return _GearPageData(
+      gearList: gearList,
+      categoryDict: categoryDict,
+      brandDict: brandDict,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final Future<Map<String, dynamic>?> adminFuture = StorageService()
@@ -117,12 +170,8 @@ class _GearPageState extends State<GearPage> {
             const SizedBox(width: 16),
           ],
         ),
-        body: FutureBuilder<List<dynamic>>(
-          future: Future.wait([
-            GearApi().getMyGear(),
-            GearApi().getCategoryDict(),
-            GearApi().getBrands(),
-          ]),
+        body: FutureBuilder<_GearPageData>(
+          future: _loadGearPageData(),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
               return const Center(child: CircularProgressIndicator());
@@ -130,52 +179,16 @@ class _GearPageState extends State<GearPage> {
             if (snapshot.hasError) {
               return Center(child: Text('加载装备失败: ${snapshot.error}'));
             }
-            final results = snapshot.data ?? [];
-            final rawList = results.isNotEmpty ? (results[0] as List) : <dynamic>[];
-            final Map<String, String> categoryDict = (results.length > 1 && results[1] is Map)
-                ? (results[1] as Map).map((k, v) => MapEntry(k.toString(), v.toString()))
-                : <String, String>{};
-            // 品牌字典：name -> displayName
-            final List<dynamic> rawBrands = results.length > 2 && results[2] is List
-                ? (results[2] as List)
-                : <dynamic>[];
-            final Map<String, String> brandDict = {};
-            for (final e in rawBrands) {
-              if (e is Map) {
-                final code = e['name']?.toString();
-                final display = e['displayName']?.toString();
-                if (code != null && display != null) {
-                  brandDict[code] = display;
-                }
-              }
-            }
-            final List<Gear> gearList = rawList.map((m) {
-              final name = m['name']?.toString() ?? '';
-              final category = m['category']?.toString() ?? '';
-              final weight = (m['weight'] as num?)?.toDouble() ?? 0;
-              final price = (m['price'] as num?)?.toDouble() ?? 0;
-              final quantity = (m['quantity'] as num?)?.toInt() ?? 1;
-              final dateStr = m['purchaseDate']?.toString() ?? '';
-              final dt = _parsePurchaseDate(dateStr);
-              final brand = m['brand']?.toString() ?? 'Other';
-              return Gear(
-                id: m['id']?.toString() ?? '$name-$dateStr-$category',
-                name: name,
-                category: category,
-                brand: brand,
-                weight: weight,
-                weightUnit: 'g',
-                price: price,
-                quantity: quantity,
-                purchaseDate: dt,
-              );
-            }).toList();
+            final _GearPageData? data = snapshot.data;
+            final List<Gear> gearList = data?.gearList ?? <Gear>[];
+            final Map<String, String> categoryDict = data?.categoryDict ?? <String, String>{};
+            final Map<String, String> brandDict = data?.brandDict ?? <String, String>{};
 
             final stats = GearStatistics.fromGearList(gearList);
 
-            final Map<String, List<Gear>> grouped = {};
-            for (final gear in gearList) {
-              (grouped[gear.category] ??= []).add(gear);
+            final Map<String, List<Gear>> grouped = <String, List<Gear>>{};
+            for (final Gear gear in gearList) {
+              (grouped[gear.category] ??= <Gear>[]).add(gear);
             }
 
             return RefreshAndEmpty(
@@ -270,6 +283,14 @@ class _GearPageState extends State<GearPage> {
     );
   }
 
+  String _formatPrice2(double price) {
+    final int cents = (price * 100).truncate();
+    final int yuan = cents ~/ 100;
+    final int remainder = cents % 100;
+    final String centsStr = remainder.toString().padLeft(2, '0');
+    return '$yuan.$centsStr';
+  }
+
   Widget _buildSummaryCard(GearStatistics stats) {
     return SectionCard(
       title: '',
@@ -277,7 +298,7 @@ class _GearPageState extends State<GearPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _buildStatItem('${stats.totalValue.toInt()}', '装备总价值'),
+            _buildStatItem(_formatPrice2(stats.totalValue), '装备总价值'),
             _buildStatItem('${stats.totalCount}件', '装备总数目'),
             _buildStatItem(
               '${stats.totalWeight.toStringAsFixed(2)}kg',
@@ -331,7 +352,7 @@ class _GearPageState extends State<GearPage> {
             children: [
               Text(categoryDict[entry.key] ?? entry.key),
               Text(
-                '${entry.value.toInt()}',
+                _formatPrice2(entry.value),
                 style: TextStyle(color: Colors.blue.shade700),
               ),
             ],
@@ -347,7 +368,7 @@ class _GearPageState extends State<GearPage> {
         Align(
           alignment: Alignment.centerRight,
           child: Text(
-            '${totalValue.toInt()}',
+            _formatPrice2(totalValue),
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -388,7 +409,7 @@ class _GearPageState extends State<GearPage> {
     final totalBrandValue = brandValues.values.fold<double>(0, (sum, v) => sum + v);
 
     return SectionCard(
-      title: '品牌价值统计（总价值：${totalBrandValue.toInt()}）',
+      title: '品牌价值统计（总价值：${_formatPrice2(totalBrandValue)}）',
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -397,7 +418,7 @@ class _GearPageState extends State<GearPage> {
             final color = entry.key == '神秘农场' ? Colors.blue : Colors.green;
             return _buildBrandBar(
               entry.key,
-              entry.value.toInt(),
+              entry.value,
               color,
               height,
             );
@@ -408,11 +429,11 @@ class _GearPageState extends State<GearPage> {
   }
 
   /// 品牌统计栏
-  Widget _buildBrandBar(String brand, int value, Color color, double height) {
+  Widget _buildBrandBar(String brand, double value, Color color, double height) {
     return Column(
       children: [
         Text(
-          '$value¥',
+          '${_formatPrice2(value)}¥',
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),

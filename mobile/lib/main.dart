@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
 import 'pages/user/user_overview_page.dart';
-import 'pages/trail/trail_list_page.dart';
-import 'pages/trail/trail_map_page.dart';
+import 'pages/activity/activity_list_page.dart';
+import 'pages/activity/activity_map_page.dart';
 import 'pages/plan/travel_plan_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_api.dart';
@@ -300,8 +300,8 @@ class _HomeTabsState extends State<HomeTabs> {
 
   late final List<Widget> _pages = <Widget>[
     HomePage(onNavigate: (index) => setState(() => _currentIndex = index)),
-    const TrailListPage(),
-    const TrailMapPage(),
+    const ActivityListPage(),
+    const ActivityMapPage(),
     const TravelPlanPage(),
     const UserOverviewPage(),
   ];
@@ -324,7 +324,7 @@ class _HomeTabsState extends State<HomeTabs> {
           NavigationDestination(
             icon: Icon(Icons.route_outlined),
             selectedIcon: Icon(Icons.route),
-            label: '足迹',
+            label: '活动',
           ),
           NavigationDestination(
             icon: Icon(Icons.map_outlined),

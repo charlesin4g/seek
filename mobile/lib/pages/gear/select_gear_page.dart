@@ -1,11 +1,30 @@
 import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../models/gear.dart';
-import '../../services/gear_api.dart';
+import '../../services/repository/gear_assets_repository.dart';
 import 'edit_gear_page.dart';
 
 class EquipmentSelectionPage extends StatelessWidget {
   const EquipmentSelectionPage({super.key});
+
+  Future<List<Gear>> _loadLocalGears() async {
+    final assets = await GearAssetsRepository.instance.getAllAssets();
+    return assets.map((asset) {
+      final DateTime date = _parsePurchaseDate(asset.purchaseDateLabel);
+      final String category = asset.category.isEmpty ? '全部装备' : asset.category;
+      return Gear(
+        id: asset.id.toString(),
+        name: asset.name,
+        category: category,
+        brand: asset.brand,
+        weight: 0,
+        weightUnit: 'g',
+        price: asset.price,
+        quantity: 1,
+        purchaseDate: date,
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +66,8 @@ class EquipmentSelectionPage extends StatelessWidget {
           ),
         ],
       ),
-      body: FutureBuilder<List<dynamic>>(
-        future: Future.wait([
-          GearApi().getMyGear(),
-          GearApi().getCategoryDict(),
-          GearApi().getBrands(),
-        ]),
+      body: FutureBuilder<List<Gear>>(
+        future: _loadLocalGears(),
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return const Center(child: CircularProgressIndicator());
@@ -61,83 +76,26 @@ class EquipmentSelectionPage extends StatelessWidget {
             return Center(child: Text('加载装备失败: ${snapshot.error}'));
           }
 
-          final results = snapshot.data ?? [];
-          final rawList = results.isNotEmpty ? (results[0] as List) : <dynamic>[];
-          final Map<String, String> categoryDict = (results.length > 1 && results[1] is Map)
-              ? (results[1] as Map).map((k, v) => MapEntry(k.toString(), v.toString()))
-              : <String, String>{};
-          // 品牌字典：name -> displayName
-          final List<dynamic> rawBrands = results.length > 2 && results[2] is List
-              ? (results[2] as List)
-              : <dynamic>[];
-          final Map<String, String> brandDict = {};
-          for (final e in rawBrands) {
-            if (e is Map) {
-              final code = e['name']?.toString();
-              final display = e['displayName']?.toString();
-              if (code != null && display != null) {
-                brandDict[code] = display;
-              }
-            }
+          final List<Gear> gearList = snapshot.data ?? <Gear>[];
+          if (gearList.isEmpty) {
+            return const Center(child: Text('暂无装备'));
           }
 
-          final List<Gear> gearList = rawList.map((m) {
-            final name = m['name']?.toString() ?? '';
-            final category = m['category']?.toString() ?? '';
-            final weight = (m['weight'] as num?)?.toDouble() ?? 0;
-            final price = (m['price'] as num?)?.toDouble() ?? 0;
-            final quantity = (m['quantity'] as num?)?.toInt() ?? 1;
-            final dateStr = m['purchaseDate']?.toString() ?? '';
-            final dt = _parsePurchaseDate(dateStr);
-            final brand = m['brand']?.toString() ?? 'Other';
-            return Gear(
-              id: m['id']?.toString() ?? '$name-$dateStr-$category',
-              name: name,
-              category: category,
-              brand: brand,
-              weight: weight,
-              weightUnit: 'g',
-              price: price,
-              quantity: quantity,
-              purchaseDate: dt,
-            );
-          }).toList();
-
-          final Map<String, List<Gear>> groupedGear = {};
-          for (final gear in gearList) {
-            (groupedGear[gear.category] ??= []).add(gear);
-          }
-
-          return SingleChildScrollView(
+          return ListView.separated(
             padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: groupedGear.entries.expand((entry) {
-                final title = categoryDict[entry.key] ?? entry.key;
-                return [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 8, top: 16),
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                  ),
-                  ...entry.value.map((gear) => _buildEquipmentCard(context, gear, brandDict)),
-                  const SizedBox(height: 8),
-                ];
-              }).toList(),
-            ),
+            itemCount: gearList.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, index) {
+              final Gear gear = gearList[index];
+              return _buildEquipmentCard(context, gear);
+            },
           );
         },
       ),
     );
   }
 
-  Widget _buildEquipmentCard(BuildContext context, Gear gear, Map<String, String> brandDict) {
+  Widget _buildEquipmentCard(BuildContext context, Gear gear) {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -146,7 +104,7 @@ class EquipmentSelectionPage extends StatelessWidget {
         elevation: 1,
         child: InkWell(
           onTap: () async {
-            final changed = await Navigator.push(
+            final bool? changed = await Navigator.push<bool>(
               context,
               MaterialPageRoute(
                 builder: (context) => EquipmentEditPage(gear: gear),
@@ -163,7 +121,7 @@ class EquipmentSelectionPage extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '${brandDict[gear.brand] ?? gear.brand} ${gear.name}',
+                    '${gear.brand} ${gear.name}',
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
@@ -183,18 +141,24 @@ class EquipmentSelectionPage extends StatelessWidget {
       ),
     );
   }
+}
 
-  DateTime _parsePurchaseDate(String s) {
-    final parts = s.split('-');
-    if (parts.length == 2) {
-      final yy = int.tryParse(parts[0]) ?? 0;
-      final mm = int.tryParse(parts[1]) ?? 1;
-      return DateTime(2000 + yy, mm, 1);
-    }
-    try {
-      return DateTime.parse(s);
-    } catch (_) {
-      return DateTime.now();
-    }
+DateTime _parsePurchaseDate(String s) {
+  final List<String> parts = s.split('-');
+  if (parts.length == 3) {
+    final int year = int.tryParse(parts[0]) ?? 2000;
+    final int month = int.tryParse(parts[1]) ?? 1;
+    final int day = int.tryParse(parts[2]) ?? 1;
+    return DateTime(year, month, day);
+  }
+  if (parts.length == 2) {
+    final int yy = int.tryParse(parts[0]) ?? 0;
+    final int mm = int.tryParse(parts[1]) ?? 1;
+    return DateTime(2000 + yy, mm, 1);
+  }
+  try {
+    return DateTime.parse(s);
+  } catch (_) {
+    return DateTime.now();
   }
 }

@@ -6,8 +6,8 @@ import '../../config/app_colors.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
 import '../../widgets/selector_field.dart';
-import '../../services/gear_api.dart';
 import '../../services/repository/gear_assets_repository.dart';
+import '../../services/repository/gear_brand_repository.dart';
 
 class AddEquipmentPage extends StatefulWidget {
   const AddEquipmentPage({super.key});
@@ -33,24 +33,23 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
   Map<String, String> _categoryDict = {};
   bool _isLoadingBrands = false;
   bool _isLoadingCategories = false;
-  final GearApi _gearApi = GearApi();
 
   @override
   void initState() {
     super.initState();
-    _fetchBrands();
+    _fetchBrands('');
     _fetchCategories();
   }
   
-  Future<void> _fetchBrands() async {
+  Future<void> _fetchBrands(keyword) async {
     setState(() {
       _isLoadingBrands = true;
     });
     
     try {
-      final brandsData = await _gearApi.getBrands();
+      final brands = await GearBrandRepository.instance.getBrandIdNameList(keyword);
       setState(() {
-        _brands = brandsData.map((data) => Brand.fromJson(data)).toList();
+        _brands = brands.map((data) => Brand.fromJson(data)).toList();
         _isLoadingBrands = false;
       });
     } catch (e) {
@@ -67,22 +66,19 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
     setState(() {
       _isLoadingCategories = true;
     });
-    
-    try {
-      final categoryDict = await _gearApi.getCategoryDict();
-      setState(() {
-        _categoryDict = categoryDict;
-        _categories = categoryDict.keys.toList();
-        _isLoadingCategories = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoadingCategories = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('获取类别数据失败: $e')),
-      );
-    }
+
+    const List<String> categories = <String>['服装', '背包', '睡眠', '炊具', '照明', '防护', '电子'];
+
+    setState(() {
+      _categories = categories;
+      _categoryDict = <String, String>{
+        for (final String name in categories) name: name,
+      };
+      _isLoadingCategories = false;
+      if (_selectedCategory.isEmpty && categories.isNotEmpty) {
+        _selectedCategory = categories.first;
+      }
+    });
   }
 
   @override
@@ -95,114 +91,120 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          '添加新装备',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: AppColors.primaryLightBlue,
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
+          title: const Text(
+            '添加新装备',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                SectionCard(
+                  title: '基本信息',
+                  children: [
+                    CustomFormField(
+                      label: '装备名称',
+                      controller: _nameController,
+                      hintText: '请输入装备名称',
+                    ),
+                    const SizedBox(height: 16),
+                    SelectorField(
+                      label: '所属类别',
+                      value: _categoryDict[_selectedCategory] ?? _selectedCategory,
+                      onTap: _showCategoryPicker,
+                    ),
+                    const SizedBox(height: 16),
+                    SelectorField(
+                      label: '品牌',
+                      value: _selectedBrand,
+                      onTap: _showBrandPicker,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SectionCard(
+                  title: '详细数据',
+                  children: [
+                    _buildWeightField(),
+                    const SizedBox(height: 16),
+                    CustomFormField(
+                      label: '单价(元)',
+                      controller: _priceController,
+                      hintText: '请输入单价',
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildQuantityField(),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SectionCard(
+                  title: '购买/办理日期',
+                  children: [
+                    _buildDateField(),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
-        centerTitle: true,
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              SectionCard(
-                title: '基本信息',
-                children: [
-                  CustomFormField(
-                    label: '装备名称',
-                    controller: _nameController,
-                    hintText: '请输入装备名称',
-                  ),
-                  const SizedBox(height: 16),
-                  SelectorField(
-                    label: '所属类别',
-                    value: _categoryDict[_selectedCategory] ?? _selectedCategory,
-                    onTap: _showCategoryPicker,
-                  ),
-                  const SizedBox(height: 16),
-                  SelectorField(
-                    label: '品牌',
-                    value: _selectedBrand,
-                    onTap: _showBrandPicker,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                title: '详细数据',
-                children: [
-                  _buildWeightField(),
-                  const SizedBox(height: 16),
-                  CustomFormField(
-                    label: '单价(元)',
-                    controller: _priceController,
-                    hintText: '请输入单价',
-                    keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: 16),
-                  _buildQuantityField(),
-                ],
-              ),
-              const SizedBox(height: 16),
-              SectionCard(
-                title: '购买/办理日期',
-                children: [
-                  _buildDateField(),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 25,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+        bottomNavigationBar: SafeArea(
+          child: Container(
+            color: Colors.white,
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Expanded(
+                  flex: 25,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
+                    child: const Text('取消'),
                   ),
-                  child: const Text('取消'),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 75,
-                child: ElevatedButton(
-                  onPressed: _saveEquipment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 75,
+                  child: ElevatedButton(
+                    onPressed: _saveEquipment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryBlue,
+                      foregroundColor: Colors.white,
+                      minimumSize: const Size(double.infinity, 48),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
+                    child: const Text('保存'),
                   ),
-                  child: const Text('保存'),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -504,47 +506,16 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
           },
         );
 
-        // 准备装备数据
-        final double weight = double.tryParse(_weightController.text) ?? 0;
+        // 准备装备数据（当前仅使用价格，重量值暂未持久化）
         final double price = double.tryParse(_priceController.text) ?? 0;
 
-        // 根据重量单位转换为克
-        double weightInGrams = weight;
-        if (_selectedWeightUnit == 'kg') {
-          weightInGrams = weight * 1000;
-        } else if (_selectedWeightUnit == '斤') {
-          weightInGrams = weight * 500;
-        }
-
-        // 从API获取的品牌列表中查找对应的英文名称
-        String brandCode = 'Other';
+        // 从本地品牌表中查找已选择品牌（找不到则使用“其他”）
         final Brand selectedBrandObj = _brands.firstWhere(
           (brand) => brand.displayName == _selectedBrand,
-          orElse: () => const Brand(name: 'Other', displayName: '其他'),
+          orElse: () => const Brand(id: 0, name: 'Other', displayName: '其他'),
         );
-        brandCode = selectedBrandObj.name;
 
-        // 创建API请求数据
-        final Map<String, dynamic> gearData = {
-          'name': _nameController.text,
-          'description': '',
-          'category': _selectedCategory,
-          'brand': brandCode,
-          'color': '', // 默认值，可以在表单中添加颜色选择
-          'size': '', // 默认值，可以在表单中添加尺寸选择
-          'weight': weightInGrams.toInt(),
-          'purchaseDate': _selectedDate.toIso8601String(),
-          'price': price,
-          'essential': true, // 默认值，可以在表单中添加是否必需选择
-          'quantity': _quantity,
-          'owner': 1, // 默认用户ID，实际应用中应该从用户会话中获取
-        };
-
-        // 调用API保存装备数据
-        final GearApi gearApi = GearApi();
-        await gearApi.addGear(gearData);
-
-        // 同步写入本地 SQLite 资产表，用于“我的装备”统计视图
+        // 写入本地 SQLite 资产表
         final String purchaseDateLabel =
             '${_selectedDate.year.toString().padLeft(4, '0')}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}';
         final String displayBrand = selectedBrandObj.displayName;
@@ -553,7 +524,9 @@ class _AddEquipmentPageState extends State<AddEquipmentPage> {
 
         await GearAssetsRepository.instance.addAsset(
           name: _nameController.text.trim(),
+          brandId: selectedBrandObj.id,
           brand: displayBrand,
+          category: _selectedCategory,
           purchaseDateLabel: purchaseDateLabel,
           price: price,
           usageCount: 0,

@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../utils/responsive.dart';
 
-class TrailMapPage extends StatelessWidget {
-  const TrailMapPage({super.key});
+class ActivityMapPage extends StatelessWidget {
+  const ActivityMapPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +38,7 @@ class TrailMapPage extends StatelessWidget {
                   ),
                   SizedBox(height: 8),
                   Text(
-                    '未来可以在这里查看足迹在地图上的分布',
+                    '未来可以在这里查看活动在地图上的分布',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: AppFontSizes.body,

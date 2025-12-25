@@ -245,7 +245,7 @@ class ImprovedGearTable extends StatelessWidget {
                         width: 80,
                         alignment: Alignment.center,
                         child: Text(
-                          '${item.price.toInt()}',
+                          _formatPrice2(item.price),
                           style: TextStyle(
                             fontSize: Responsive.value(context,
                               small: AppFontSizes.body,
@@ -288,6 +288,14 @@ class ImprovedGearTable extends StatelessWidget {
     );
   }
   
+  String _formatPrice2(double price) {
+    final int cents = (price * 100).truncate();
+    final int yuan = cents ~/ 100;
+    final int remainder = cents % 100;
+    final String centsStr = remainder.toString().padLeft(2, '0');
+    return '$yuan.$centsStr';
+  }
+
   /// 获取装备名称列的宽度 - 响应式处理
   double _getNameColumnWidth(BuildContext context) {
     final screenWidth = Responsive.width(context);

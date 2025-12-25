@@ -1,6 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite_sqlcipher/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import '../local_db.dart';
 import '../web_local_store.dart';
 
@@ -39,13 +38,6 @@ class TicketRepository {
 
     await LocalDatabase.instance.runInTransaction((tx) async {
       await tx.insert('ticket', row, conflictAlgorithm: ConflictAlgorithm.replace);
-      await tx.insert('change_log', {
-        'entity': 'ticket',
-        'entityId': id,
-        'op': 'insert',
-        'payload': jsonEncode(data),
-        'ts': DateTime.now().millisecondsSinceEpoch,
-      });
     });
     return id;
   }
@@ -65,7 +57,7 @@ class TicketRepository {
     return rows.map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  /// 编辑票据并记录变更日志
+  /// 编辑票据
   Future<void> editTicket(String ticketId, Map<String, dynamic> data) async {
     if (kIsWeb) {
       await WebLocalStore.instance.editTicket(ticketId, data);
@@ -93,13 +85,6 @@ class TicketRepository {
         where: 'id = ?',
         whereArgs: [ticketId],
       );
-      await tx.insert('change_log', {
-        'entity': 'ticket',
-        'entityId': ticketId,
-        'op': 'update',
-        'payload': jsonEncode(data),
-        'ts': DateTime.now().millisecondsSinceEpoch,
-      });
     });
   }
 }

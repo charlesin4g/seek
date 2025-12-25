@@ -3,7 +3,7 @@ import 'dart:io' show Platform;
 
 /// 应用环境配置项
 ///
-/// 说明：OSS 配置已迁移至 `lib/config/oss_config.dart`，不通过启动参数重配置。
+/// 说明：当前版本不再在前端使用 OSS 相关配置。
 class Env {
   // 是否在登录页启用测试默认值：admin/seek
   // 可通过 --dart-define=USE_TEST_DEFAULT_LOGIN=true/false 覆盖

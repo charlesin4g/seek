@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'local_db.dart';
-import 'package:sqflite_sqlcipher/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import 'web_local_store.dart';
 import 'storage_service.dart';
 

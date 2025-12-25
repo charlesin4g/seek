@@ -67,12 +67,12 @@ class _GearAssetsPageState extends State<GearAssetsPage> {
               final int totalCount = assets.length;
               final double totalValue =
                   assets.fold(0, (num sum, GearAssetRecord e) => sum + e.price);
-              final String totalValueLabel = '¥${totalValue.toStringAsFixed(0)}';
+              final String totalValueLabel = '¥${_formatPrice2(totalValue)}';
 
               if (assets.isEmpty) {
                 return Center(
                   child: Text(
-                    '暂无装备，点击卡片添加一件吧',
+                    '暂无装备，点击右下角 + 按钮添加一件吧',
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.9),
                       fontSize: AppFontSizes.body,
@@ -141,6 +141,20 @@ class _GearAssetsPageState extends State<GearAssetsPage> {
             },
           ),
         ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: AppColors.secondaryGreen,
+          child: const Icon(Icons.add, color: Colors.white),
+          onPressed: () async {
+            final bool? added = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(builder: (_) => const AddEquipmentPage()),
+            );
+            if (added == true) {
+              refreshAssets();
+            }
+          },
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -251,7 +265,7 @@ class _GearAssetCard extends StatelessWidget {
         final TextEditingController nameController =
             TextEditingController(text: asset.name);
         final TextEditingController priceController =
-            TextEditingController(text: asset.price.toStringAsFixed(0));
+            TextEditingController(text: _formatPrice2(asset.price));
         final TextEditingController usageCountController =
             TextEditingController(text: asset.usageCount.toString());
         final TextEditingController purchaseDateController =
@@ -459,7 +473,7 @@ class _GearAssetCard extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '¥${asset.price.toStringAsFixed(0)}',
+                        '¥${_formatPrice2(asset.price)}',
                         style: const TextStyle(
                           color: Color(0xFFFFD54F),
                           fontSize: AppFontSizes.bodyLarge,
@@ -483,6 +497,14 @@ class _GearAssetCard extends StatelessWidget {
       ),
     );
   }
+}
+
+String _formatPrice2(double price) {
+  final int cents = (price * 100).truncate();
+  final int yuan = cents ~/ 100;
+  final int remainder = cents % 100;
+  final String centsStr = remainder.toString().padLeft(2, '0');
+  return '$yuan.$centsStr';
 }
 
 class _AddGearCard extends StatelessWidget {

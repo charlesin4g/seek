@@ -1,6 +1,5 @@
 package com.charles.seek.controller;
 
-import com.charles.seek.config.TestConfig;
 import com.charles.seek.dto.user.request.CreateUserRequest;
 import com.charles.seek.dto.user.request.UpdateUserRequest;
 import com.charles.seek.dto.user.response.UserProfile;

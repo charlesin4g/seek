@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:sqflite_sqlcipher/sqflite.dart';
+import 'package:sqflite/sqflite.dart';
 import '../local_db.dart';
 import '../web_local_store.dart';
 

@@ -1,19 +1,22 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import '../../services/storage_service.dart';
-import '../../services/user_api.dart';
 import '../../services/activity_api.dart';
 import '../../widgets/section_card.dart';
-import '../../services/oss_service.dart';
-import '../../services/photo_api.dart';
-// 条件导入上传助手：Web 使用 dart:html 实现，其他平台为占位
+import '../../services/repository/user_photo_repository.dart';
+// 条件导入上传助手：Web 使用 dart:html 实现，IO 平台使用 image_picker 实现
 import '../../utils/upload_helper_stub.dart'
-    if (dart.library.html) '../../utils/upload_helper_web.dart';
+    if (dart.library.html) '../../utils/upload_helper_web.dart'
+    if (dart.library.io) '../../utils/upload_helper_mobile.dart';
+// 条件导入本地图片存储服务：IO 平台使用文件系统实现
+import '../../services/local_image_storage_stub.dart'
+    if (dart.library.io) '../../services/local_image_storage_mobile.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/foundation.dart';
 import '../../services/offline_mode.dart';
 import '../../services/network_probe_service.dart';
-import '../../services/health_check_service.dart';
 import '../../widgets/refresh_and_empty.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/security_icons.dart';
@@ -38,40 +41,33 @@ class _UserProfilePageState extends State<UserProfilePage> {
   Future<void> _loadUserInfo() async {
     try {
       final userData = await StorageService().getCachedAdminUser();
-      if (userData != null && mounted) {
-        final username = userData['username'];
-        if (username != null) {
-          // 从后端获取完整的用户信息，包括个人签名
-          final userProfile = await UserApi().getUserByUsername(username);
-          // 缓存完整用户信息到本地（包含displayName），用于后续快速读取
-          await StorageService().cacheUser(userProfile);
-          if (mounted) {
-            setState(() {
-              _displayName = userProfile['displayName'] ?? userProfile['username'] ?? '见山资深用户';
-              _signature = userProfile['signature'] ?? '这个人很懒，什么都没有留下';
-              // 使用 OssService 解析私有头像 URL（可生成临时签名访问）
-              final avatar = userProfile['avatarUrl'] ?? userProfile['avatar'];
-              _avatarUrl = OssService().resolvePrivateUrl(avatar?.toString());
-            });
-          }
-        } else {
-          if (mounted) {
-            setState(() {
-              _displayName = '见山资深用户';
-              _signature = '这个人很懒，什么都没有留下';
-              _avatarUrl = null;
-            });
-          }
-        }
-      }
-    } catch (e) {
-      if (mounted) {
+      if (!mounted) return;
+
+      if (userData != null) {
+        final displayName = userData['displayName'] ?? userData['username'] ?? '见山资深用户';
+        final signature = userData['signature'] ?? '这个人很懒，什么都没有留下';
+        final avatar = userData['avatarUrl'] ?? userData['avatar'];
+
         setState(() {
-          _displayName = '加载失败';
-          _signature = '加载失败';
+          _displayName = displayName;
+          _signature = signature;
+          // 头像 URL 直接使用后端/本地缓存返回的字段（可能是完整 URL 或本地路径）
+          _avatarUrl = avatar?.toString();
+        });
+      } else {
+        setState(() {
+          _displayName = '见山资深用户';
+          _signature = '这个人很懒，什么都没有留下';
           _avatarUrl = null;
         });
       }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _displayName = '加载失败';
+        _signature = '加载失败';
+        _avatarUrl = null;
+      });
     }
   }
 
@@ -100,7 +96,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
   List<_SessionRecord> _allSessions = [];
   bool _loadingMore = false;
   // 照片墙
-  List<String> _photoUrls = [];
+  List<UserPhotoRecord> _photos = [];
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -130,28 +126,6 @@ class _UserProfilePageState extends State<UserProfilePage> {
       if (_sessions.length < _allSessions.length) {
         _loadMoreSessions();
       }
-    }
-  }
-
-  Future<bool> _verifyPhotosReachable(List<String> urls, {int sample = 3}) async {
-    final client = http.Client();
-    try {
-      final candidates = urls.take(sample).toList();
-      for (final u in candidates) {
-        final resolved = OssService().resolvePrivateUrl(u);
-        if (resolved == null || resolved.isEmpty) continue;
-        try {
-          final res = await client.head(Uri.parse(resolved)).timeout(const Duration(seconds: 3));
-          if (res.statusCode >= 200 && res.statusCode < 400) {
-            return true;
-          }
-        } catch (e) {
-          if (!kReleaseMode) debugPrint('Photo HEAD failed: $e');
-        }
-      }
-      return false;
-    } finally {
-      client.close();
     }
   }
 
@@ -220,7 +194,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
         _avatarUrl = null;
         _sessions = [];
         _allSessions = [];
-        _photoUrls = [];
+        _photos = [];
         _statsData = [];
         _totalDistance = 0;
         _totalAscent = 0;
@@ -277,7 +251,7 @@ class _UserProfilePageState extends State<UserProfilePage> {
             tooltip: '刷新',
             color: AppColors.textPrimary,
           ),
-          // 前端上传入口（Web 平台）
+          // 前端上传入口（当前版本：非 Web 平台保存到本地 SQLite）
           IconButton(
             icon: const Icon(Icons.cloud_upload_outlined),
             onPressed: _uploadPhoto,
@@ -466,9 +440,9 @@ class _UserProfilePageState extends State<UserProfilePage> {
             ),
             const SizedBox(height: 16), // 统一间距
             
-            if (_photoUrls.isNotEmpty) _PhotoWall(photos: _photoUrls),
-            if (_photoUrls.isNotEmpty) const SizedBox(height: 16), // 统一间距
-            if (_photoUrls.isNotEmpty) const Divider(height: 1),
+            if (_photos.isNotEmpty) _PhotoWall(photos: _photos),
+            if (_photos.isNotEmpty) const SizedBox(height: 16), // 统一间距
+            if (_photos.isNotEmpty) const Divider(height: 1),
 
             // 统计卡片
             _OverviewCard(
@@ -495,64 +469,45 @@ class _UserProfilePageState extends State<UserProfilePage> {
     );
   }
 
-  /// 选择图片并上传到 OSS（Web 平台直传）
+  /// 选择图片并保存到本地设备（当前版本仅在移动端/桌面端生效）
   ///
   /// 流程：
   /// 1) 选择图片文件并读取字节；
-  /// 2) 拼接对象 key（含前缀，可包含用户ID与时间戳）；
-  /// 3) 请求后端生成 PUT 临时签名 URL；
-  /// 4) 直接对该 URL 执行 HTTP PUT 上传；
-  /// 5) 上传成功后，调用 /api/photo/add 写入记录并刷新照片墙。
+  /// 2) 保存到应用的本地图片目录并写入 SQLite；
+  /// 3) 重新加载照片墙以展示最新与星标状态。
   Future<void> _uploadPhoto() async {
-    if (!kIsWeb) {
+    if (kIsWeb) {
+      // Web 平台暂不支持本地文件系统存储
       _showFeatureHint();
       return;
     }
 
     try {
-      // 1) 选择图片并读取字节
       final helper = UploadHelper();
       final Uint8List? bytes = await helper.pickImageBytes();
       if (bytes == null || bytes.isEmpty) return;
 
-      // 2) 计算对象 key：photos/{owner}/{timestamp}.jpg
       final cached = await StorageService().getCachedAdminUser();
-      final owner = cached?['userId']?.toString() ?? '1';
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      final objectKey = 'photos/$owner/$ts.jpg';
+      final String owner = cached?['userId']?.toString() ?? '1';
 
-      // 3) 获取 PUT 签名 URL
-      final signedUrl = await PhotoApi().signPutUrl(objectKey);
-      if (signedUrl == null || signedUrl.isEmpty) {
-        throw Exception('获取上传签名失败');
-      }
+      // 保存到本地图片目录并写入 SQLite
+      final storage = const LocalImageStorage();
+      final String filePath = await storage.saveUserPhoto(bytes);
+      await UserPhotoRepository.instance.addPhoto(owner: owner, path: filePath);
 
-      // 4) 上传图片（设置通用 content-type）
-      final putRes = await http.put(
-        Uri.parse(signedUrl),
-        headers: {
-          'Content-Type': 'image/jpeg',
-        },
-        body: bytes,
-      );
-      if (putRes.statusCode < 200 || putRes.statusCode >= 300) {
-        throw Exception('上传失败，状态码 ${putRes.statusCode}');
-      }
-
-      // 5) 记录入库并刷新照片墙
-      await PhotoApi().addPhotoRecord(owner: owner, objectKey: objectKey);
+      // 重新加载照片墙数据，确保星标状态正确
       await _loadPhotos();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('上传成功')),
-        );
-      }
+      // 重新加载照片墙数据，确保星标状态正确
+      await _loadPhotos();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已保存到本地')),
+      );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('上传失败: $e')),
-        );
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('保存失败: $e')),
+      );
     }
   }
 
@@ -605,20 +560,24 @@ class _UserProfilePageState extends State<UserProfilePage> {
     }
   }
 
-  // 从后端加载用户照片墙数据
+  // 从本地 SQLite 加载用户照片墙数据
   Future<void> _loadPhotos() async {
     try {
-      final healthy = await HealthCheckService.instance.checkAvailable(timeout: const Duration(seconds: 3));
-      if (!healthy) {
-        if (mounted) setState(() => _photoUrls = []);
-        return;
+      final cached = await StorageService().getCachedAdminUser();
+      final owner = cached?['userId']?.toString() ?? '1';
+      final records = await UserPhotoRepository.instance.getPhotos(owner);
+      if (mounted) {
+        setState(() {
+          _photos = records;
+        });
       }
-      final urls = await PhotoApi().getMyPhotos();
-      final ok = urls.isNotEmpty && await _verifyPhotosReachable(urls);
-      if (mounted) setState(() => _photoUrls = ok ? urls : []);
     } catch (e) {
       if (!kReleaseMode) debugPrint('Load photos error: $e');
-      if (mounted) setState(() => _photoUrls = []);
+      if (mounted) {
+        setState(() {
+          _photos = [];
+        });
+      }
     }
   }
 
@@ -839,48 +798,84 @@ class _DataPoint {
 
   // 照片墙组件：横向滑动的图片缩略图列表
   class _PhotoWall extends StatelessWidget {
-    final List<String> photos;
+    final List<UserPhotoRecord> photos;
     const _PhotoWall({required this.photos});
 
     @override
     Widget build(BuildContext context) {
       if (photos.isEmpty) return const SizedBox.shrink();
       return SizedBox(
-        height: 120, // 调整高度
+        height: 120,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          padding: AppSpacing.horizontal, // 使用统一的水平间距
+          padding: AppSpacing.horizontal,
           itemCount: photos.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 12), // 调整间距
-          itemBuilder: (_, i) => Container(
-            decoration: BoxDecoration(
-              borderRadius: AppBorderRadius.large, // 使用统一圆角
-              boxShadow: [AppShadows.light], // 添加柔和阴影
-              border: Border.all(color: AppColors.borderLight, width: 1), // 添加边框
-            ),
-            child: ClipRRect(
-              borderRadius: AppBorderRadius.large, // 使用统一圆角
-              child: (() {
-                // 统一使用私有签名 URL 解析，兼容完整 URL 与资源 key
-                final resolved = OssService().resolvePrivateUrl(photos[i]);
-                if (resolved == null || resolved.isEmpty) {
-                  return Container(
-                    width: 140,
-                    height: 120,
-                    color: AppColors.backgroundGrey,
-                    child: Icon(Icons.image_not_supported, color: AppColors.textTertiary, size: 32),
-                  );
-                }
-                return Image.network(
-                  resolved,
-                  width: 140,
-                  height: 120,
-                  fit: BoxFit.cover,
-                );
-              })(),
-            ),
-          ),
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, i) {
+            final UserPhotoRecord photo = photos[i];
+            return Container(
+              decoration: BoxDecoration(
+                borderRadius: AppBorderRadius.large,
+                boxShadow: [AppShadows.light],
+                border: Border.all(color: AppColors.borderLight, width: 1),
+              ),
+              child: ClipRRect(
+                borderRadius: AppBorderRadius.large,
+                child: Stack(
+                  children: [
+                    _buildPhotoImage(photo.path),
+                    if (photo.isStar)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withValues(alpha: 0.6),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
+      );
+    }
+
+    Widget _buildPhotoImage(String path) {
+      if (path.isEmpty) {
+        return Container(
+          width: 140,
+          height: 120,
+          color: AppColors.backgroundGrey,
+          child: Icon(
+            Icons.image_not_supported,
+            color: AppColors.textTertiary,
+            size: 32,
+          ),
+        );
+      }
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return Image.network(
+          path,
+          width: 140,
+          height: 120,
+          fit: BoxFit.cover,
+        );
+      }
+      return Image.file(
+        File(path),
+        width: 140,
+        height: 120,
+        fit: BoxFit.cover,
       );
     }
   }

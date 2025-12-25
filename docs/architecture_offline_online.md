@@ -15,8 +15,7 @@
 
 ## 数据流
 1. 离线模式：Controller 调用 Service → Repository → LocalDatabase；
-2. 在线模式：Controller 调用 Service → HttpClient → 后端；
-3. 切回在线：SyncService 读取 `change_log` 增量推送至后端；
+2. 在线模式：Controller 调用 Service → HttpClient → 后端
 
 ## 事务与加密
 - 使用 SQLCipher 提供数据库文件级加密；

@@ -79,18 +79,24 @@ class GearBrand {
 }
 
 class Brand {
+  final int id;
   final String name;
   final String displayName;
-  
+
   const Brand({
+    required this.id,
     required this.name,
     required this.displayName,
   });
-  
+
   factory Brand.fromJson(Map<String, dynamic> json) {
+    final int id = (json['id'] as num?)?.toInt() ?? 0;
+    final String name = json['name'] as String;
+    final Object? display = json['displayName'];
     return Brand(
-      name: json['name'] as String,
-      displayName: json['displayName'] as String,
+      id: id,
+      name: name,
+      displayName: display == null ? name : display as String,
     );
   }
 }

@@ -1,56 +1,26 @@
-import 'dart:convert';
-import 'http_client.dart';
-import 'offline_mode.dart';
 import 'repository/station_repository.dart';
 
+/// 车站 API 本地实现
+///
+/// 说明：
+/// - 去掉了所有线上 HTTP 调用，仅通过 StationRepository 访问本地 SQLite；
+/// - 保留原有类名和方法签名，避免影响调用方；
+/// - 在线/离线切换逻辑由上层 OfflineModeManager 控制，这里只关心本地数据。
 class StationApi {
-  /// 默认使用全局共享的 HttpClient
-  StationApi({HttpClient? client}) : _client = client ?? HttpClient.shared;
+  StationApi();
 
-  final HttpClient _client;
-
-  Future<Map<String, dynamic>> addStation(Map<String, dynamic> data) async {
-    if (OfflineModeManager.instance.isOffline.value) {
-      return StationRepository.instance.addStation(data);
-    }
-    try {
-      final raw = await _client.postJson('/api/ticket/station/add', body: data);
-      if (raw.isEmpty) return {};
-      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
-    } catch (_) {
-      await OfflineModeManager.instance.setOffline(true);
-      return StationRepository.instance.addStation(data);
-    }
+  /// 新增车站：直接写入本地 SQLite。
+  Future<Map<String, dynamic>> addStation(Map<String, dynamic> data) {
+    return StationRepository.instance.addStation(data);
   }
 
-  Future<Map<String, dynamic>?> getByCode(String code) async {
-    if (OfflineModeManager.instance.isOffline.value) {
-      return StationRepository.instance.getByCode(code);
-    }
-    try {
-      final c = Uri.encodeQueryComponent(code.toUpperCase());
-      final raw = await _client.getJson('/api/ticket/station?code=$c');
-      if (raw.isEmpty) return null;
-      return Map<String, dynamic>.from(jsonDecode(raw) as Map);
-    } catch (_) {
-      await OfflineModeManager.instance.setOffline(true);
-      return StationRepository.instance.getByCode(code);
-    }
+  /// 按站码查询车站（仅本地 SQLite）
+  Future<Map<String, dynamic>?> getByCode(String code) {
+    return StationRepository.instance.getByCode(code);
   }
 
-  Future<List<Map<String, dynamic>>> search(String keyword) async {
-    if (OfflineModeManager.instance.isOffline.value) {
-      return StationRepository.instance.search(keyword);
-    }
-    try {
-      final q = Uri.encodeQueryComponent(keyword);
-      final raw = await _client.getJson('/api/ticket/station/search?keyword=$q');
-      if (raw.isEmpty) return [];
-      final decoded = jsonDecode(raw) as List;
-      return decoded.map((e) => Map<String, dynamic>.from(e as Map)).toList();
-    } catch (_) {
-      await OfflineModeManager.instance.setOffline(true);
-      return StationRepository.instance.search(keyword);
-    }
+  /// 关键字搜索车站（仅本地 SQLite）
+  Future<List<Map<String, dynamic>>> search(String keyword) {
+    return StationRepository.instance.search(keyword);
   }
 }

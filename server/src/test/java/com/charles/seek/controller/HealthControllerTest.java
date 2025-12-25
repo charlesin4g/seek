@@ -1,6 +1,5 @@
 package com.charles.seek.controller;
 
-import com.charles.seek.config.TestConfig;
 import com.charles.seek.service.HealthDownException;
 import com.charles.seek.service.HealthService;
 import org.junit.jupiter.api.Test;
