@@ -122,8 +122,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     }
   }
 
+  // 长按图片
   Future<void> _onImageLongPress(String imageUrl) async {
-    final bool? shouldSetStar = await showModalBottomSheet<bool>(
+    final String? action = await showModalBottomSheet<String>(
       context: context,
       builder: (BuildContext context) {
         return SafeArea(
@@ -133,7 +134,15 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
               ListTile(
                 leading: const Icon(Icons.star, color: Colors.amber),
                 title: const Text('设为星标'),
-                onTap: () => Navigator.of(context).pop(true),
+                onTap: () => Navigator.of(context).pop('star'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete, color: Colors.red),
+                title: const Text(
+                  '删除照片',
+                  style: TextStyle(color: Colors.red),
+                ),
+                onTap: () => Navigator.of(context).pop('delete'),
               ),
             ],
           ),
@@ -141,29 +150,93 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       },
     );
 
-    if (shouldSetStar != true) {
+    if (action == null) {
       return;
     }
 
+    if (action == 'star') {
+      try {
+        await ActivityRepository.instance.appendActivityImage(
+          activityId: _trip.id,
+          imageUrl: imageUrl,
+          setAsStar: true,
+        );
+        final ActivityTrip? refreshed =
+            await ActivityRepository.instance.getActivityById(_trip.id);
+        if (!mounted) return;
+        setState(() {
+          _trip = refreshed ?? _trip;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已设为星标图片')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('设置星标失败: $e')),
+        );
+      }
+    } else if (action == 'delete') {
+      final bool? confirmed = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('确认删除'),
+            content: const Text('确定要删除这张照片吗？此操作不可恢复。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  '删除',
+                  style: TextStyle(color: Colors.red),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (confirmed == true) {
+        await _deleteActivityImage(imageUrl);
+      }
+    }
+  }
+
+  Future<void> _deleteActivityImage(String imageUrl) async {
     try {
-      await ActivityRepository.instance.appendActivityImage(
+      // 删除本地文件（如果是本地路径）
+      try {
+        final storage = const LocalImageStorage();
+        await storage.deleteLocalImageIfExists(imageUrl);
+      } catch (e) {
+        if (!kReleaseMode) {
+          debugPrint('删除本地图片失败: $e');
+        }
+      }
+
+      await ActivityRepository.instance.deleteActivityImage(
         activityId: _trip.id,
         imageUrl: imageUrl,
-        setAsStar: true,
       );
+
       final ActivityTrip? refreshed =
           await ActivityRepository.instance.getActivityById(_trip.id);
       if (!mounted) return;
       setState(() {
         _trip = refreshed ?? _trip;
       });
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已设为星标图片')),
+        const SnackBar(content: Text('已删除照片')),
       );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('设置星标失败: $e')),
+        SnackBar(content: Text('删除照片失败: $e')),
       );
     }
   }
@@ -277,7 +350,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                 children: [
                   _buildStatItem(
                     icon: Icons.access_time,
-                    label: '总耗时',
+                    label: '耗时',
                     value: _trip.durationText,
                   ),
                   _buildStatItem(
@@ -293,12 +366,32 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildMetricsModules(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatItem(
+                    icon: Icons.terrain,
+                    label: '爬升',
+                    value: _formatMeters(_trip.elevationGain),
+                  ),
+                  _buildStatItem(
+                    icon: Icons.terrain,
+                    label: '下降',
+                    value: _formatMeters(_trip.elevationLoss),
+                  ),
+                  _buildStatItem(
+                    icon: Icons.terrain,
+                    label: '最高',
+                    value:  _formatNullableMeters(_trip.maxElevation),
+                  ),
+                ],
+              ),
+              //_buildMetricsModules(),
               const SizedBox(height: 16),
               Divider(color: AppColors.divider),
               const SizedBox(height: 16),
               const Text(
-                'About this trip',
+                '活动详情',
                 style: TextStyle(
                   fontSize: AppFontSizes.subtitle,
                   fontWeight: FontWeight.w600,
@@ -321,13 +414,15 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
     );
   }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+ Widget _buildStatItem({
+  required IconData icon,
+  required String label,
+  required String value,
+}) {
+  return Expanded(                     // 让三列宽度相等
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           label,
@@ -339,6 +434,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
         ),
         const SizedBox(height: 6),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon, size: 18, color: AppColors.primaryDarkBlue),
             const SizedBox(width: 6),
@@ -353,198 +449,9 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildMetricsModules() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildMetricGroup(
-          title: '时间',
-          icon: Icons.schedule,
-          metrics: <_MetricItem>[
-            _MetricItem('活动时间', _formatDateTime(_trip.activityTime)),
-            _MetricItem('移动时间', _formatDurationSec(_trip.movingTimeSec)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildMetricGroup(
-          title: '心率',
-          icon: Icons.favorite,
-          metrics: <_MetricItem>[
-            _MetricItem('平均心率', _formatBpm(_trip.avgHeartRate)),
-            _MetricItem('最大心率', _formatBpm(_trip.maxHeartRate)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildMetricGroup(
-          title: '速度',
-          icon: Icons.speed,
-          metrics: <_MetricItem>[
-            _MetricItem('平均速度', _formatSpeed(_trip.avgSpeed)),
-            _MetricItem('最大速度', _formatSpeed(_trip.maxSpeed)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildMetricGroup(
-          title: '能量',
-          icon: Icons.local_fire_department,
-          metrics: <_MetricItem>[
-            _MetricItem('卡路里', _formatCalories(_trip.calories)),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _buildMetricGroup(
-          title: '海拔',
-          icon: Icons.terrain,
-          metrics: <_MetricItem>[
-            _MetricItem('爬升海拔', _formatMeters(_trip.elevationGain)),
-            _MetricItem('下降海拔', _formatMeters(_trip.elevationLoss)),
-            _MetricItem('最高海拔', _formatNullableMeters(_trip.maxElevation)),
-            _MetricItem('最低海拔', _formatNullableMeters(_trip.minElevation)),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildMetricGroup({
-    required String title,
-    required IconData icon,
-    required List<_MetricItem> metrics,
-  }) {
-    if (metrics.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundGrey,
-        borderRadius: AppBorderRadius.large,
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: AppColors.primaryDarkBlue),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: AppFontSizes.bodyLarge,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          _buildMetricGrid(metrics),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMetricGrid(List<_MetricItem> metrics) {
-    final List<Widget> rows = <Widget>[];
-
-    for (int i = 0; i < metrics.length; i += 2) {
-      final _MetricItem left = metrics[i];
-      final _MetricItem? right = (i + 1 < metrics.length) ? metrics[i + 1] : null;
-
-      rows.add(
-        Row(
-          children: [
-            Expanded(child: _buildMetricTile(left)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: right == null ? const SizedBox.shrink() : _buildMetricTile(right),
-            ),
-          ],
-        ),
-      );
-
-      if (i + 2 < metrics.length) {
-        rows.add(const SizedBox(height: 10));
-      }
-    }
-
-    return Column(children: rows);
-  }
-
-  Widget _buildMetricTile(_MetricItem item) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: AppColors.backgroundWhite,
-        borderRadius: AppBorderRadius.large,
-        border: Border.all(color: AppColors.borderLight),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            item.label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textTertiary,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            item.value,
-            style: const TextStyle(
-              fontSize: AppFontSizes.body,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatDateTime(DateTime? dt) {
-    if (dt == null) return '-';
-    final String y = dt.year.toString().padLeft(4, '0');
-    final String m = dt.month.toString().padLeft(2, '0');
-    final String d = dt.day.toString().padLeft(2, '0');
-    final String hh = dt.hour.toString().padLeft(2, '0');
-    final String mm = dt.minute.toString().padLeft(2, '0');
-    return '$y-$m-$d $hh:$mm';
-  }
-
-  String _formatDurationSec(int seconds) {
-    if (seconds <= 0) return '-';
-    final int h = seconds ~/ 3600;
-    final int m = (seconds % 3600) ~/ 60;
-    final int s = seconds % 60;
-    final String hh = h.toString().padLeft(2, '0');
-    final String mm = m.toString().padLeft(2, '0');
-    final String ss = s.toString().padLeft(2, '0');
-    return '$hh:$mm:$ss';
-  }
-
-  String _formatBpm(int bpm) {
-    if (bpm <= 0) return '-';
-    return '$bpm bpm';
-  }
-
-  String _formatSpeed(double speedMetersPerSec) {
-    if (speedMetersPerSec <= 0) return '-';
-    final double kmh = speedMetersPerSec * 3.6;
-    return '${kmh.toStringAsFixed(1)} km/h';
-  }
-
-  String _formatCalories(int calories) {
-    if (calories <= 0) return '-';
-    return '$calories kcal';
-  }
+    ),
+  );
+}
 
   String _formatMeters(double meters) {
     return '${meters.toStringAsFixed(0)} m';
@@ -558,7 +465,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
   Widget _buildGallerySection(BuildContext context) {
     final int totalCount = _trip.galleryImageUrls.length;
 
-    const int maxVisibleItems = 4;
+    const int maxVisibleItems = 10;
     final int visibleCount = totalCount <= maxVisibleItems ? totalCount : maxVisibleItems;
 
     return Padding(
@@ -696,13 +603,6 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       ),
     );
   }
-}
-
-class _MetricItem {
-  const _MetricItem(this.label, this.value);
-
-  final String label;
-  final String value;
 }
 
 Widget _buildImageWidget(String path, {BoxFit fit = BoxFit.cover}) {

@@ -146,6 +146,79 @@ class ActivityRepository {
     }
   }
 
+  Future<void> deleteActivityImage({
+    required String activityId,
+    required String imageUrl,
+  }) async {
+    try {
+      final db = await _db();
+      await _ensureActivityImageColumns(db);
+
+      final List<Map<String, Object?>> rows = await db.query(
+        'activity',
+        columns: <String>['images', 'star_image', 'image_count'],
+        where: 'id = ?',
+        whereArgs: <Object>[activityId],
+        limit: 1,
+      );
+
+      String imagesRaw = '[]';
+      String starImage = '';
+      int imageCount = 0;
+      if (rows.isNotEmpty) {
+        imagesRaw = rows.first['images']?.toString() ?? '[]';
+        starImage = rows.first['star_image']?.toString() ?? '';
+        imageCount = int.tryParse(rows.first['image_count']?.toString() ?? '0') ??
+            0;
+      }
+
+      List<String> images;
+      try {
+        final dynamic decoded = jsonDecode(imagesRaw);
+        if (decoded is List) {
+          images = decoded.map((dynamic e) => e.toString()).toList();
+        } else {
+          images = <String>[];
+        }
+      } catch (_) {
+        images = <String>[];
+      }
+
+      images.removeWhere((String e) => e == imageUrl);
+
+      if (images.isEmpty) {
+        starImage = '';
+      } else if (starImage == imageUrl) {
+        starImage = images.first;
+      }
+
+      final String updatedImagesJson = jsonEncode(images);
+      imageCount = images.length;
+
+      await db.update(
+        'activity',
+        <String, Object?>{
+          'images': updatedImagesJson,
+          'star_image': starImage,
+          'image_count': imageCount,
+        },
+        where: 'id = ?',
+        whereArgs: <Object>[activityId],
+      );
+
+      final ActivityTrip? updated = await getActivityById(activityId);
+      if (updated != null) {
+        _tripUpdatesController.add(updated);
+      }
+    } catch (error, stackTrace) {
+      if (!kReleaseMode) {
+        debugPrint('ActivityRepository.deleteActivityImage failed: $error');
+        debugPrint(stackTrace.toString());
+      }
+      rethrow;
+    }
+  }
+
   Future<ActivityTrip?> getActivityById(String id) async {
     final db = await _db();
     await _ensureActivityImageColumns(db);

@@ -18,4 +18,8 @@ class LocalImageStorage {
   }) async {
     throw UnsupportedError('Local image storage is not supported on this platform');
   }
+
+  Future<void> deleteLocalImageIfExists(String path) async {
+    throw UnsupportedError('Local image storage is not supported on this platform');
+  }
 }

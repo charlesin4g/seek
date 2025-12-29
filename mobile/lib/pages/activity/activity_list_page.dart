@@ -83,11 +83,9 @@ class _ActivityListPageState extends State<ActivityListPage> {
     setState(() {
       _isLoadingMore = true;
     });
-      try {
-      final List<ActivityTrip> page = await ActivityRepository.instance.getActivityTripsPage(
-        limit: _pageSize,
-        offset: _offset,
-      );
+    try {
+      final List<ActivityTrip> page = await ActivityRepository.instance
+          .getActivityTripsPage(limit: _pageSize, offset: _offset);
 
       if (!mounted) return;
       setState(() {
@@ -108,9 +106,7 @@ class _ActivityListPageState extends State<ActivityListPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.backgroundGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -119,9 +115,7 @@ class _ActivityListPageState extends State<ActivityListPage> {
           title: const Text('活动'),
           centerTitle: true,
         ),
-        body: SafeArea(
-          child: _buildBody(context),
-        ),
+        body: SafeArea(child: _buildBody(context)),
       ),
     );
   }
@@ -184,7 +178,6 @@ class _ActivityCard extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => ActivityDetailPage(trip: trip)),
-
         );
       },
       child: Container(
@@ -197,10 +190,7 @@ class _ActivityCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildImageSection(),
-              _buildStatsSection(),
-            ],
+            children: [_buildImageSection(), _buildStatsSection()],
           ),
         ),
       ),
@@ -213,10 +203,7 @@ class _ActivityCard extends StatelessWidget {
       tag: 'activity-cover-${trip.id}',
       child: Stack(
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _buildCoverImage(coverPath),
-          ),
+          AspectRatio(aspectRatio: 16 / 9, child: _buildCoverImage(coverPath)),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -231,33 +218,6 @@ class _ActivityCard extends StatelessWidget {
               ),
             ),
           ),
-          if (trip.starImageUrl != null && trip.starImageUrl!.isNotEmpty)
-            Positioned(
-              left: 16,
-              top: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.star, size: 16, color: Colors.amber),
-                    SizedBox(width: 4),
-                    Text(
-                      '星标',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
           Positioned(
             right: 16,
             top: 16,
@@ -295,7 +255,11 @@ class _ActivityCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.place, size: 16, color: AppColors.textWhite),
+                    const Icon(
+                      Icons.place,
+                      size: 16,
+                      color: AppColors.textWhite,
+                    ),
                     const SizedBox(width: 4),
                     Flexible(
                       child: Text(
@@ -325,7 +289,10 @@ class _ActivityCard extends StatelessWidget {
         children: [
           _ActivityStat(icon: Icons.access_time, label: trip.durationText),
           _ActivityStat(icon: Icons.directions_walk, label: trip.distanceText),
-          _ActivityStat(icon: Icons.photo_library_outlined, label: trip.photosText),
+          _ActivityStat(
+            icon: Icons.photo_library_outlined,
+            label: trip.photosText,
+          ),
         ],
       ),
     );
@@ -337,10 +304,7 @@ Widget _buildCoverImage(String path) {
     return Image.network(path, fit: BoxFit.cover);
   }
   if (path.startsWith('/')) {
-    return Image.file(
-      File(path),
-      fit: BoxFit.cover,
-    );
+    return Image.file(File(path), fit: BoxFit.cover);
   }
   return Image.asset(path, fit: BoxFit.cover);
 }

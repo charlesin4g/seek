@@ -1,8 +1,6 @@
-import '../services/storage_service.dart';
-
 class Ticket {
   final String? id;
-  final String type; // 'train' | 'flight'
+  final String type; // '火车' | '飞机'
 
   // Trip info
   final String code; // 车次/航班号
@@ -22,13 +20,6 @@ class Ticket {
   // Ticketing
   final double price;
   final String? discount; // 文本如 "98折"
-  final String ticketCategory; // 成人票/儿童票等
-  final String status; // 已支付/未支付/退票/改签
-
-  // Order & passenger
-  final String? orderNo;
-  final String? passengerName;
-  final String? remark;
 
   Ticket({
     this.id,
@@ -45,12 +36,7 @@ class Ticket {
     this.gateOrCheckin,
     this.waitingArea,
     required this.price,
-    this.discount,
-    required this.ticketCategory,
-    required this.status,
-    this.orderNo,
-    this.passengerName,
-    this.remark,
+    this.discount
   });
 
   static DateTime parseDate(dynamic value) {
@@ -73,33 +59,34 @@ class Ticket {
     return Ticket(
       id: json['id']?.toString(),
       type: _mapCategoryToType(json['category']?.toString() ?? ''),
-      code: (json['code'] ?? json['travelNo'] ?? '').toString(),
-      departStation: (json['departStation'] ?? json['fromPlace'] ?? '').toString(),
-      arriveStation: (json['arriveStation'] ?? json['toPlace'] ?? '').toString(),
-      departTime: parseDate(json['departTime'] ?? json['departureTime']),
-      arriveTime: parseDate(json['arriveTime'] ?? json['arrivalTime']),
-      durationMinutes: int.tryParse(json['durationMinutes']?.toString() ?? '0') ?? 0,
+      code: (json['code'] ?? json['travelNo'] ?? json['travel_no'] ?? '')
+          .toString(),
+      departStation:
+          (json['departStation'] ?? json['fromPlace'] ?? json['from'] ?? '')
+              .toString(),
+      arriveStation:
+          (json['arriveStation'] ?? json['toPlace'] ?? json['to'] ?? '')
+              .toString(),
+      departTime:
+          parseDate(json['departTime'] ?? json['departureTime'] ?? json['departure_time']),
+      arriveTime:
+          parseDate(json['arriveTime'] ?? json['arrivalTime'] ?? json['arrival_time']),
+      durationMinutes:
+          int.tryParse(json['durationMinutes']?.toString() ?? '0') ?? 0,
       coachOrCabin: json['coachOrCabin']?.toString(),
-      seatNo: json['seatNo']?.toString(),
+      seatNo: (json['seatNo'] ?? json['seat_no'])?.toString(),
       seatType: (json['seatType'] ?? json['seatClass'])?.toString(),
       gateOrCheckin: json['gateOrCheckin']?.toString(),
       waitingArea: json['waitingArea']?.toString(),
       price: parseDouble(json['price']),
-      discount: json['discount']?.toString(),
-      ticketCategory: (json['ticketCategory'] ?? '成人票').toString(),
-      status: (json['status'] ?? '已支付').toString(),
-      orderNo: json['orderNo']?.toString(),
-      passengerName: json['passengerName']?.toString(),
-      remark: json['remark']?.toString(),
+      discount: json['discount']?.toString()
     );
   }
 
   Map<String, dynamic> toJson() {
-    // 仅发送后端 AddTicketRequest 需要/接受的字段，避免未知字段导致校验问题
-    final cachedUser = StorageService().getCachedUserSync();
-    final ownerId = cachedUser?['userId']?.toString();
+    // 离线模式：构造本地 SQLite 写入所需字段，同时兼容旧的线上字段名
     return {
-      'category': type == 'flight' ? 'Flight' : 'Train',
+      'category': type == '飞机' ? '飞机' : '火车',
       'travelNo': code,
       'fromPlace': departStation,
       'toPlace': arriveStation,
@@ -107,21 +94,18 @@ class Ticket {
       'arrivalTime': arriveTime.toIso8601String(),
       'seatClass': seatType,
       'seatNo': seatNo,
-      'price': price,
-      'currency': 'CNY',
-      'passengerName': passengerName,
-      'owner': ownerId ?? '1',
+      'price': price
     };
   }
 
   static String _mapCategoryToType(String category) {
     switch (category.toLowerCase()) {
-      case 'flight':
-        return 'flight';
-      case 'train':
-        return 'train';
+      case '飞机':
+        return '飞机';
+      case '火车':
+        return '火车';
       default:
-        return category.isEmpty ? 'train' : category.toLowerCase();
+        return category.isEmpty ? '火车' : category.toLowerCase();
     }
   }
 }

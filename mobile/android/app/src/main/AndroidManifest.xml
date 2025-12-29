@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 允许应用访问网络，用于加载 OpenStreetMap 瓦片、接口请求等 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:label="mobile"
         android:name="${applicationName}"

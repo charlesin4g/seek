@@ -21,6 +21,9 @@ dependencies:
   web: any
   image_picker: ^1.1.2
   path_provider: ^2.1.4
+  webview_flutter: ^4.8.0
+  flutter_map: ^5.0.0   # 请检查最新版本
+  latlong2: ^0.9.0      # 用于坐标类型
 
 dev_dependencies:
   flutter_test:

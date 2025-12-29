@@ -39,4 +39,16 @@ class LocalImageStorage {
     await file.writeAsBytes(bytes, flush: true);
     return filePath;
   }
+
+  /// 删除本地图片文件（如果存在）
+  Future<void> deleteLocalImageIfExists(String path) async {
+    try {
+      final File file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } catch (_) {
+      // 删除失败不影响主流程
+    }
+  }
 }

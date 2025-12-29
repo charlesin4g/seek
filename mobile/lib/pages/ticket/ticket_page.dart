@@ -145,14 +145,6 @@ class _TicketPageState extends State<TicketPage> {
                               Expanded(child: Text('${t.seatType ?? ''} ${t.seatNo ?? ''}'.trim())),
                             ],
                           ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              const Icon(Icons.payments, size: 18, color: AppColors.primaryBlue),
-                              const SizedBox(width: 6),
-                              Expanded(child: Text('¥${t.price.toStringAsFixed(2)} · ${t.ticketCategory} · ${t.status}')),
-                            ],
-                          ),
                         ],
                       );
                     },

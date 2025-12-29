@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/pages/map/map_page.dart';
 import 'pages/login_page.dart';
 import 'pages/user/user_overview_page.dart';
 import 'pages/activity/activity_list_page.dart';
-import 'pages/activity/activity_map_page.dart';
 import 'pages/plan/travel_plan_page.dart';
 import 'services/auth_service.dart';
 import 'services/user_api.dart';
@@ -301,7 +301,7 @@ class _HomeTabsState extends State<HomeTabs> {
   late final List<Widget> _pages = <Widget>[
     HomePage(onNavigate: (index) => setState(() => _currentIndex = index)),
     const ActivityListPage(),
-    const ActivityMapPage(),
+    MapPage(),
     const TravelPlanPage(),
     const UserOverviewPage(),
   ];

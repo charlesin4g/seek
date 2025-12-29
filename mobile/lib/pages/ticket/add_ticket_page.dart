@@ -1,15 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import '../../widgets/section_card.dart';
-import '../../widgets/form_field.dart';
-import '../../widgets/selector_field.dart';
-import '../../services/ticket_api.dart';
+
 import '../../config/app_colors.dart';
 import '../../models/ticket.dart';
-import '../../services/storage_service.dart';
-import 'dart:convert';
-import '../../services/station_api.dart';
-import '../../widgets/offline_prompt.dart'; // 接口失败时提示切换离线
 import '../../services/snapshot_service.dart';
+import '../../services/station_api.dart';
+import '../../services/storage_service.dart';
+import '../../services/ticket_api.dart';
+import '../../utils/responsive.dart';
+import '../../widgets/form_field.dart';
+import '../../widgets/offline_prompt.dart'; // 接口失败时提示切换离线
+import '../../widgets/section_card.dart';
+import '../../widgets/selector_field.dart';
+import 'widgets/ticket_summary_card.dart';
 
 class AddTicketPage extends StatefulWidget {
   const AddTicketPage({super.key});
@@ -204,6 +208,78 @@ class _AddTicketPageState extends State<AddTicketPage> {
     } catch (_) {
       // 网络异常时不更新建议
     }
+  }
+
+  Widget _buildStationSuggestionList({required bool isDepart}) {
+    if (_ticketKindCode != 'train') {
+      return const SizedBox.shrink();
+    }
+
+    final focus = isDepart ? _departFocus : _arriveFocus;
+    if (!focus.hasFocus) {
+      return const SizedBox.shrink();
+    }
+
+    final suggestions =
+        isDepart ? _departStationSuggestions : _arriveStationSuggestions;
+    final controller =
+        isDepart ? _departStationController : _arriveStationController;
+
+    Widget buildContent() {
+      if (suggestions.isEmpty) {
+        return ListTile(
+          dense: true,
+          title: const Text('未找到车站，新增？'),
+          trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
+          onTap: () => _showAddStationDialog(isDepart: isDepart),
+        );
+      }
+
+      final tiles = <Widget>[];
+      final maxItems = suggestions.length < 6 ? suggestions.length : 6;
+      for (int i = 0; i < maxItems; i++) {
+        final station = suggestions[i];
+        final name = station['name']?.toString() ?? '';
+        final city = station['city']?.toString() ?? '';
+        final code = station['stationCode']?.toString() ?? '';
+        final subtitleParts = <String>[];
+        if (code.isNotEmpty) subtitleParts.add(code);
+        if (city.isNotEmpty) subtitleParts.add(city);
+        tiles.add(
+          ListTile(
+            dense: true,
+            title: Text(name),
+            subtitle:
+                subtitleParts.isNotEmpty ? Text(subtitleParts.join(' · ')) : null,
+            onTap: () {
+              final display = city.isNotEmpty ? '$name（$city）' : name;
+              controller.text = display;
+              controller.selection =
+                  TextSelection.collapsed(offset: controller.text.length);
+              setState(() => suggestions.clear());
+            },
+          ),
+        );
+        if (i != maxItems - 1) {
+          tiles.add(const Divider(height: 0));
+        }
+      }
+      return Column(children: tiles);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite.withValues(alpha: 0.95),
+        borderRadius: AppBorderRadius.large,
+        border: Border.all(color: AppColors.borderLight),
+        boxShadow: const [AppShadows.light],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: buildContent(),
+      ),
+    );
   }
 
   // 计算行程时长
@@ -404,12 +480,7 @@ class _AddTicketPageState extends State<AddTicketPage> {
         gateOrCheckin: _gateOrCheckinController.text.trim().isEmpty ? null : _gateOrCheckinController.text.trim(),
         waitingArea: _waitingAreaController.text.trim().isEmpty ? null : _waitingAreaController.text.trim(),
         price: price,
-        discount: _discountController.text.trim().isEmpty ? null : _discountController.text.trim(),
-        ticketCategory: _ticketCategoryDisplay,
-        status: _ticketStatusDisplay,
-        orderNo: _orderNoController.text.trim().isEmpty ? null : _orderNoController.text.trim(),
-        passengerName: _passengerController.text.trim().isEmpty ? null : _passengerController.text.trim(),
-        remark: _remarkController.text.trim().isEmpty ? null : _remarkController.text.trim(),
+        discount: _discountController.text.trim().isEmpty ? null : _discountController.text.trim()
       );
 
       await _ticketApi.addTicket(ticket.toJson());
@@ -433,466 +504,429 @@ class _AddTicketPageState extends State<AddTicketPage> {
     }
   }
 
+  Widget _buildBottomActions({
+    required BuildContext context,
+    required String primaryLabel,
+    required VoidCallback onPrimary,
+  }) {
+    final double buttonHeight = Responsive.responsiveButtonHeight(context);
+    return SafeArea(
+      child: Container(
+        color: Colors.transparent,
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.textPrimary,
+                  side: BorderSide(color: AppColors.borderLight),
+                  minimumSize: Size(double.infinity, buttonHeight),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppBorderRadius.large,
+                  ),
+                ),
+                child: const Text('取消'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: DecoratedBox(
+                decoration: const BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                  borderRadius: AppBorderRadius.large,
+                ),
+                child: ElevatedButton(
+                  onPressed: onPrimary,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    minimumSize: Size(double.infinity, buttonHeight),
+                    padding: EdgeInsets.zero,
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppBorderRadius.large,
+                    ),
+                  ),
+                  child: Text(
+                    primaryLabel,
+                    style: const TextStyle(
+                      fontSize: AppFontSizes.bodyLarge,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text(
-          '添加票据',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        centerTitle: true,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                SectionCard(
-                  title: '票种',
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          title: const Text(
+            '添加票据',
+            style: TextStyle(
+              fontSize: AppFontSizes.title,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          centerTitle: true,
+          iconTheme: const IconThemeData(color: AppColors.textPrimary),
+        ),
+        body: SafeArea(
+          child: ResponsiveContainer(
+            child: Form(
+              key: _formKey,
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 160),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          flex: 2,
-                          child: Text(
-                            '票种类型',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _ticketKindDisplay,
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: '火车票', child: Text('火车票')),
-                              DropdownMenuItem(value: '飞机票', child: Text('飞机票')),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _ticketKindDisplay = value);
-                              }
-                            },
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppColors.primaryBlue),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: '行程信息 (*为必填项)',
-                  children: [
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '车次*' : '航班号*',
-                      controller: _codeController,
-                      hintText: _ticketKindCode == 'train' ? '如 G1234' : '如 MU5123',
-                      keyboardType: TextInputType.text,
+                    TicketSummaryCard(
+                      ticketKindDisplay: _ticketKindDisplay,
+                      codeController: _codeController,
+                      departController: _departStationController,
+                      arriveController: _arriveStationController,
+                      priceController: _priceController,
+                      departTime: _departDateTime,
+                      arriveTime: _arriveDateTime,
                     ),
                     const SizedBox(height: 16),
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '出发站(火车站)*' : '出发站(机场)*',
-                      controller: _departStationController,
-                      hintText: '请输入出发站',
-                      focusNode: _departFocus,
-                      onChanged: (v) {
-                        _handleAirportInput(v, isDepart: true);
-                        _handleStationInput(v, isDepart: true);
-                      },
-                    ),
-                    if (_ticketKindCode == 'train')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    SectionCard(
+                      title: '票种',
+                      children: [
+                        Row(
                           children: [
-                            if (_departFocus.hasFocus)
-                              Card(
-                                elevation: 0,
-                                color: Colors.grey.shade100,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade300)),
-                                child: Column(
-                                  children: [
-                                    if (_departStationSuggestions.isNotEmpty)
-                                      ..._departStationSuggestions.take(6).map((s) {
-                                        final name = s['name']?.toString() ?? '';
-                                        final city = s['city']?.toString() ?? '';
-                                        final code = s['stationCode']?.toString() ?? '';
-                                        final subtitle = [
-                                          if (code.isNotEmpty) code,
-                                          if (city.isNotEmpty) city,
-                                        ].join(' · ');
-                                        return ListTile(
-                                          dense: true,
-                                          title: Text(name),
-                                          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-                                          onTap: () {
-                                            final ctrl = _departStationController;
-                                            ctrl.text = city.isNotEmpty ? '$name（$city）' : name;
-                                            ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
-                                            setState(() => _departStationSuggestions.clear());
-                                          },
-                                        );
-                                      }),
-                                    if (_departStationSuggestions.isEmpty)
-                                      ListTile(
-                                        dense: true,
-                                        title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
-                                        onTap: () => _showAddStationDialog(isDepart: true),
-                                      ),
-                                  ],
+                            const Expanded(
+                              flex: 2,
+                              child: Text(
+                                '票种类型',
+                                style: TextStyle(
+                                  fontSize: AppFontSizes.bodyLarge,
+                                  color: AppColors.textPrimary,
                                 ),
                               ),
-
-                          ],
-                        ),
-                      ),
-                    const SizedBox(height: 16),
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '到达站(火车站)*' : '到达站(机场)*',
-                      controller: _arriveStationController,
-                      hintText: '请输入到达站',
-                      focusNode: _arriveFocus,
-                      onChanged: (v) {
-                        _handleAirportInput(v, isDepart: false);
-                        _handleStationInput(v, isDepart: false);
-                      },
-                    ),
-                    if (_ticketKindCode == 'train')
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (_arriveFocus.hasFocus)
-                              Card(
-                                elevation: 0,
-                                color: Colors.grey.shade100,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8), side: BorderSide(color: Colors.grey.shade300)),
-                                child: Column(
-                                  children: [
-                                    if (_arriveStationSuggestions.isNotEmpty)
-                                      ..._arriveStationSuggestions.take(6).map((s) {
-                                        final name = s['name']?.toString() ?? '';
-                                        final city = s['city']?.toString() ?? '';
-                                        final code = s['stationCode']?.toString() ?? '';
-                                        final subtitle = [
-                                          if (code.isNotEmpty) code,
-                                          if (city.isNotEmpty) city,
-                                        ].join(' · ');
-                                        return ListTile(
-                                          dense: true,
-                                          title: Text(name),
-                                          subtitle: subtitle.isNotEmpty ? Text(subtitle) : null,
-                                          onTap: () {
-                                            final ctrl = _arriveStationController;
-                                            ctrl.text = city.isNotEmpty ? '$name（$city）' : name;
-                                            ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
-                                            setState(() => _arriveStationSuggestions.clear());
-                                          },
-                                        );
-                                      }),
-                                    if (_arriveStationSuggestions.isEmpty)
-                                      ListTile(
-                                        dense: true,
-                                        title: const Text('未找到车站，新增？'),
-                                        trailing: const Icon(Icons.add, color: AppColors.primaryDarkBlue),
-                                        onTap: () => _showAddStationDialog(isDepart: false),
-                                      ),
-                                  ],
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: DropdownButtonFormField<String>(
+                                initialValue: _ticketKindDisplay,
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(value: '火车票', child: Text('火车票')),
+                                  DropdownMenuItem(value: '飞机票', child: Text('飞机票')),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _ticketKindDisplay = value);
+                                  }
+                                },
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                                 ),
                               ),
-
+                            ),
                           ],
                         ),
-                      ),
-                    const SizedBox(height: 16),
-                    SelectorField(
-                      label: '出发时间*',
-                      value: _fmtDateTime(_departDateTime),
-                      icon: Icons.schedule,
-                      onTap: () => _pickDateTime(isDepart: true),
+                      ],
                     ),
                     const SizedBox(height: 16),
-                    SelectorField(
-                      label: '到达时间*',
-                      value: _fmtDateTime(_arriveDateTime),
-                      icon: Icons.schedule,
-                      onTap: () => _pickDateTime(isDepart: false),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
+                    SectionCard(
+                      title: '行程信息 (*为必填项)',
                       children: [
-                        const Expanded(
-                          flex: 2,
-                          child: Text('行程时长', style: TextStyle(fontSize: 16, color: Colors.black87)),
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '车次*' : '航班号*',
+                          controller: _codeController,
+                          hintText: _ticketKindCode == 'train' ? '如 G1234' : '如 MU5123',
+                          keyboardType: TextInputType.text,
                         ),
-                        Expanded(
-                          flex: 3,
-                          child: Text('$_durationMinutes分钟', style: const TextStyle(fontSize: 16, color: AppColors.primaryDarkBlue)),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '出发站(火车站)*' : '出发站(机场)*',
+                          controller: _departStationController,
+                          hintText: '请输入出发站',
+                          focusNode: _departFocus,
+                          onChanged: (v) {
+                            _handleAirportInput(v, isDepart: true);
+                            _handleStationInput(v, isDepart: true);
+                          },
+                        ),
+                        _buildStationSuggestionList(isDepart: true),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '到达站(火车站)*' : '到达站(机场)*',
+                          controller: _arriveStationController,
+                          hintText: '请输入到达站',
+                          focusNode: _arriveFocus,
+                          onChanged: (v) {
+                            _handleAirportInput(v, isDepart: false);
+                            _handleStationInput(v, isDepart: false);
+                          },
+                        ),
+                        _buildStationSuggestionList(isDepart: false),
+                        const SizedBox(height: 16),
+                        SelectorField(
+                          label: '出发时间*',
+                          value: _fmtDateTime(_departDateTime),
+                          icon: Icons.schedule,
+                          onTap: () => _pickDateTime(isDepart: true),
+                        ),
+                        const SizedBox(height: 16),
+                        SelectorField(
+                          label: '到达时间*',
+                          value: _fmtDateTime(_arriveDateTime),
+                          icon: Icons.schedule,
+                          onTap: () => _pickDateTime(isDepart: false),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Expanded(
+                              flex: 2,
+                              child: Text(
+                                '行程时长',
+                                style: TextStyle(
+                                  fontSize: AppFontSizes.bodyLarge,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                '$_durationMinutes分钟',
+                                style: const TextStyle(
+                                  fontSize: AppFontSizes.bodyLarge,
+                                  color: AppColors.primaryDarkBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      title: _ticketKindCode == 'train' ? '车次信息' : '航班信息',
+                      children: [
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '车厢' : '舱位',
+                          controller: _coachOrCabinController,
+                          hintText: _ticketKindCode == 'train' ? '如 5车' : '如 经济舱',
+                        ),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: '座位号',
+                          controller: _seatNoController,
+                          hintText: '如 12A',
+                        ),
+                        const SizedBox(height: 16),
+                        SelectorField(
+                          label: '座位类型',
+                          value: _seatTypeDisplay,
+                          onTap: _showSeatTypePicker,
+                        ),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '检票口' : '登机口/值机柜台',
+                          controller: _gateOrCheckinController,
+                          hintText: _ticketKindCode == 'train' ? '如 A12' : '如 B12/岛2',
+                        ),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: _ticketKindCode == 'train' ? '候车区' : '航站楼',
+                          controller: _waitingAreaController,
+                          hintText: _ticketKindCode == 'train' ? '如 候车区A' : '如 T2',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      title: '票务信息',
+                      children: [
+                        CustomFormField(
+                          label: '票价 CNY ¥',
+                          controller: _priceController,
+                          hintText: '请输入票价',
+                          keyboardType: TextInputType.number,
+                        ),
+                        const SizedBox(height: 16),
+                        CustomFormField(
+                          label: '折扣',
+                          controller: _discountController,
+                          hintText: '如 98折、对座98折',
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Expanded(
+                              flex: 2,
+                              child: Text(
+                                '票类型',
+                                style: TextStyle(
+                                  fontSize: AppFontSizes.bodyLarge,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: DropdownButtonFormField<String>(
+                                initialValue: _ticketCategoryDisplay,
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(value: '成人票', child: Text('成人票')),
+                                  DropdownMenuItem(value: '儿童票', child: Text('儿童票')),
+                                  DropdownMenuItem(value: '学生票', child: Text('学生票')),
+                                  DropdownMenuItem(value: '军人票', child: Text('军人票')),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _ticketCategoryDisplay = value);
+                                  }
+                                },
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            const Expanded(
+                              flex: 2,
+                              child: Text(
+                                '票状态',
+                                style: TextStyle(
+                                  fontSize: AppFontSizes.bodyLarge,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 3,
+                              child: DropdownButtonFormField<String>(
+                                initialValue: _ticketStatusDisplay,
+                                isExpanded: true,
+                                items: const [
+                                  DropdownMenuItem(value: '已支付', child: Text('已支付')),
+                                  DropdownMenuItem(value: '未支付', child: Text('未支付')),
+                                  DropdownMenuItem(value: '已退票', child: Text('已退票')),
+                                  DropdownMenuItem(value: '已改签', child: Text('已改签')),
+                                ],
+                                onChanged: (value) {
+                                  if (value != null) {
+                                    setState(() => _ticketStatusDisplay = value);
+                                  }
+                                },
+                                decoration: InputDecoration(
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                  ),
+                                  focusedBorder: const OutlineInputBorder(
+                                    borderRadius: AppBorderRadius.large,
+                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                  ),
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      title: '订单信息',
+                      children: [
+                        CustomFormField(
+                          label: '取票号/订单号',
+                          controller: _orderNoController,
+                          hintText: '请输入订单号或取票号',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      title: '乘客信息',
+                      children: [
+                        CustomFormField(
+                          label: '乘客姓名',
+                          controller: _passengerController,
+                          hintText: '请输入乘客姓名',
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    SectionCard(
+                      title: '备注',
+                      children: [
+                        CustomFormField(
+                          label: '备注',
+                          controller: _remarkController,
+                          hintText: '请输入备注',
+                          keyboardType: TextInputType.multiline,
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: _ticketKindCode == 'train' ? '车次信息' : '航班信息',
-                  children: [
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '车厢' : '舱位',
-                      controller: _coachOrCabinController,
-                      hintText: _ticketKindCode == 'train' ? '如 5车' : '如 经济舱',
-                    ),
-                    const SizedBox(height: 16),
-                    CustomFormField(
-                      label: '座位号',
-                      controller: _seatNoController,
-                      hintText: _ticketKindCode == 'train' ? '如 12A' : '如 12A',
-                    ),
-                    const SizedBox(height: 16),
-                    SelectorField(
-                      label: '座位类型',
-                      value: _seatTypeDisplay,
-                      onTap: _showSeatTypePicker,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '检票口' : '登机口/值机柜台',
-                      controller: _gateOrCheckinController,
-                      hintText: _ticketKindCode == 'train' ? '如 A12' : '如 B12/岛2',
-                    ),
-                    const SizedBox(height: 16),
-                    CustomFormField(
-                      label: _ticketKindCode == 'train' ? '候车区' : '航站楼',
-                      controller: _waitingAreaController,
-                      hintText: _ticketKindCode == 'train' ? '如 候车区A' : '如 T2',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: '票务信息',
-                  children: [
-                    CustomFormField(
-                      label: '票价 CNY ¥',
-                      controller: _priceController,
-                      hintText: '请输入票价',
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 16),
-                    CustomFormField(
-                      label: '折扣',
-                      controller: _discountController,
-                      hintText: '如 98折、对座98折',
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Expanded(
-                          flex: 2,
-                          child: Text(
-                            '票类型',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _ticketCategoryDisplay,
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: '成人票', child: Text('成人票')),
-                              DropdownMenuItem(value: '儿童票', child: Text('儿童票')),
-                              DropdownMenuItem(value: '学生票', child: Text('学生票')),
-                              DropdownMenuItem(value: '军人票', child: Text('军人票')),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _ticketCategoryDisplay = value);
-                              }
-                            },
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppColors.primaryBlue),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        const Expanded(
-                          flex: 2,
-                          child: Text(
-                            '票状态',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _ticketStatusDisplay,
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: '已支付', child: Text('已支付')),
-                              DropdownMenuItem(value: '未支付', child: Text('未支付')),
-                              DropdownMenuItem(value: '已退票', child: Text('已退票')),
-                              DropdownMenuItem(value: '已改签', child: Text('已改签')),
-                            ],
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _ticketStatusDisplay = value);
-                              }
-                            },
-                            decoration: InputDecoration(
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: BorderSide(color: Colors.grey.shade300),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(8),
-                                borderSide: const BorderSide(color: AppColors.primaryBlue),
-                              ),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: '订单信息',
-                  children: [
-                    CustomFormField(
-                      label: '取票号/订单号',
-                      controller: _orderNoController,
-                      hintText: '请输入订单号或取票号',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: '乘客信息',
-                  children: [
-                    CustomFormField(
-                      label: '乘客姓名',
-                      controller: _passengerController,
-                      hintText: '请输入乘客姓名',
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                SectionCard(
-                  title: '备注',
-                  children: [
-                    CustomFormField(
-                      label: '备注',
-                      controller: _remarkController,
-                      hintText: '请输入备注',
-                      keyboardType: TextInputType.multiline,
-                    ),
-                  ],
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-      bottomSheet: SafeArea(
-        child: Container(
-          color: Colors.white,
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 25,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('取消'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                flex: 75,
-                child: ElevatedButton(
-                  onPressed: _saveTicket,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryBlue,
-                    foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 48),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('保存'),
-                ),
-              ),
-              ],
-            ),
-          ),
+        bottomNavigationBar: _buildBottomActions(
+          context: context,
+          primaryLabel: '保存票据',
+          onPrimary: _saveTicket,
         ),
-      );
+      ),
+    );
   }
 }
