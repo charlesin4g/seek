@@ -19,7 +19,7 @@ public class SwaggerUrlPrinter implements ApplicationListener<ApplicationReadyEv
 
     @SuppressWarnings("NullableProblems")
     @Override
-    public void onApplicationEvent(ApplicationReadyEvent event) {
+    public void onApplicationEvent(@SuppressWarnings("null") ApplicationReadyEvent event) {
         try {
             String protocol = environment.getProperty("server.ssl.key-store") != null ? "https" : "http";
             String hostAddress = InetAddress.getLocalHost().getHostAddress();

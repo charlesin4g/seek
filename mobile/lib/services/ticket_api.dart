@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 
 import 'repository/ticket_repository.dart';
-import 'storage_service.dart';
 
 /// 票据 API 本地实现
 ///
@@ -20,17 +19,7 @@ class TicketApi {
 
   /// 查询当前用户的票据列表（仅本地 SQLite）
   Future<List<Map<String, dynamic>>> getMyTickets() async {
-    final cached = StorageService().getCachedUserSync();
-    String owner = cached?['userId']?.toString() ?? '1';
-    if (cached == null) {
-      final persisted = await StorageService().getCachedAdminUser();
-      final persistedOwner = persisted?['userId']?.toString();
-      if (persistedOwner != null && persistedOwner.isNotEmpty) {
-        owner = persistedOwner;
-      }
-    }
-
-    return TicketRepository.instance.getMyTickets(owner);
+    return TicketRepository.instance.getMyTickets();
   }
 
   /// 编辑票据：始终更新本地 SQLite，并记录变更日志。

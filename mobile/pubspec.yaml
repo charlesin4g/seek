@@ -3,8 +3,10 @@ description: "A new Flutter project."
 publish_to: 'none'
 version: 1.0.0+1
 
+# ^version表示：允许安装与指定版本兼容的最新版本，但不包括破坏性的主要版本更新
+
 environment:
-  sdk: ^3.9.2
+  sdk: ^3.9.2 # ^表示允许 3.9.2 到3.9.9之间的任何版本
 
 dependencies:
   flutter:
@@ -24,6 +26,7 @@ dependencies:
   webview_flutter: ^4.8.0
   flutter_map: ^5.0.0   # 请检查最新版本
   latlong2: ^0.9.0      # 用于坐标类型
+  floor: ^1.4.0 # 数据库查询
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +34,9 @@ dev_dependencies:
 
   flutter_lints: ^5.0.0
   mockito: ^5.4.4
+  floor_generator: ^1.4.0
+  build_runner: ^2.4.0
+  analyzer: ^6.0.0
 
 flutter:
   uses-material-design: true

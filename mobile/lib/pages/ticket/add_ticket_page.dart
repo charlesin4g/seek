@@ -1,9 +1,9 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mobile/data/services/ticket_service.dart';
 
 import '../../config/app_colors.dart';
-import '../../models/ticket.dart';
 import '../../services/snapshot_service.dart';
 import '../../services/station_api.dart';
 import '../../services/storage_service.dart';
@@ -55,6 +55,8 @@ class _AddTicketPageState extends State<AddTicketPage> {
   final TextEditingController _remarkController = TextEditingController();
 
   final TicketApi _ticketApi = TicketApi();
+  final TicketService _ticketService = TicketService();
+  int _durationMinutes = 0; 
   final FocusNode _departFocus = FocusNode();
   final FocusNode _arriveFocus = FocusNode();
   String _lastDepartIataQuery = '';

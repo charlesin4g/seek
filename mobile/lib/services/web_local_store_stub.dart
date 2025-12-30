@@ -80,10 +80,10 @@ class WebLocalStore {
     return id;
   }
 
-  Future<List<Map<String, dynamic>>> getMyTickets(String owner) async {
+  Future<List<Map<String, dynamic>>> getMyTickets() async {
     final list = _readList(_ticketsKey);
-    final filtered = list.where((e) => (e['owner']?.toString() ?? '') == owner).toList();
-    filtered.sort((a, b) => (b['updatedAt'] as int).compareTo(a['updatedAt'] as int));
+    final filtered = list.toList();
+    filtered.sort((a, b) => (b['departureTime'] as int).compareTo(a['departureTime'] as int));
     return filtered;
   }
 
@@ -101,12 +101,7 @@ class WebLocalStore {
         'arrivalTime': data['arrivalTime']?.toString(),
         'seatClass': data['seatClass']?.toString(),
         'seatNo': data['seatNo']?.toString(),
-        'price': (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0,
-        'currency': data['currency']?.toString(),
-        'passengerName': data['passengerName']?.toString(),
-        'remark': data['remark']?.toString(),
-        'updatedAt': DateTime.now().millisecondsSinceEpoch,
-        'synced': 0,
+        'price': (data['price'] is num) ? (data['price'] as num).toDouble() : 0.0
       };
       _writeList(_ticketsKey, list);
       _appendLog('ticket', ticketId, 'update', data);
