@@ -96,7 +96,7 @@ class _$AppDatabase extends AppDatabase {
       },
       onCreate: (database, version) async {
         await database.execute(
-            'CREATE TABLE IF NOT EXISTS `ticket` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `type` TEXT NOT NULL, `transport_no` TEXT NOT NULL, `from` TEXT NOT NULL, `to` TEXT NOT NULL, `departure_time` TEXT NOT NULL, `arrival_time` TEXT NOT NULL, `seat_class` TEXT, `seat_no` TEXT, `check_in_position` TEXT, `terminal_area` TEXT, `price` REAL, `carrier` TEXT, `booking_reference` TEXT, `purchase_platform` TEXT, `notes` TEXT)');
+            'CREATE TABLE IF NOT EXISTS `ticket` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `type` TEXT NOT NULL, `transport_no` TEXT NOT NULL, `from` TEXT NOT NULL, `to` TEXT NOT NULL, `departure_time` TEXT NOT NULL, `arrival_time` TEXT NOT NULL, `seat_class` TEXT, `seat_no` TEXT, `check_in_position` TEXT, `terminal_area` TEXT, `price` REAL, `carrier` TEXT, `booking_reference` TEXT, `purchase_platform` TEXT, `notes` TEXT)');
 
         await callback?.onCreate?.call(database, version);
       },
@@ -176,7 +176,7 @@ class _$TicketDao extends TicketDao {
     return _queryAdapter.queryList(
         'SELECT * FROM ticket ORDER BY departureTime DESC',
         mapper: (Map<String, Object?> row) => Ticket(
-            id: row['id'] as int,
+            id: row['id'] as int?,
             type: row['type'] as String,
             transportNo: row['transport_no'] as String,
             from: row['from'] as String,
@@ -200,7 +200,7 @@ class _$TicketDao extends TicketDao {
   Future<Ticket?> findById(int id) async {
     return _queryAdapter.query('SELECT * FROM ticket WHERE id = ?1',
         mapper: (Map<String, Object?> row) => Ticket(
-            id: row['id'] as int,
+            id: row['id'] as int?,
             type: row['type'] as String,
             transportNo: row['transport_no'] as String,
             from: row['from'] as String,
@@ -233,7 +233,7 @@ class _$TicketDao extends TicketDao {
   }
 
   @override
-  Future<void> updateUser(Ticket ticket) async {
+  Future<void> update(Ticket ticket) async {
     await _ticketUpdateAdapter.update(ticket, OnConflictStrategy.abort);
   }
 }
