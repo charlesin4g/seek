@@ -22,6 +22,8 @@ class TicketService {
     String seatClass,
     String seatNo,
     double price,
+    String checkInPosition,
+    String terminalArea,
     String carrier,
     String bookingReference,
     String purchasePlatform,
@@ -37,6 +39,8 @@ class TicketService {
       seatClass: seatClass,
       seatNo: seatNo,
       price: price,
+      checkInPosition: checkInPosition,
+      terminalArea: terminalArea,
       carrier: carrier,
       bookingReference: bookingReference,
       purchasePlatform: purchasePlatform,
@@ -45,8 +49,9 @@ class TicketService {
     return await _ticketDao.insert(ticket);
   }
 
-    // 更新票据
-  Future<void> update(int id,
+  // 更新票据
+  Future<void> update(
+    int id,
     String type,
     String transportNo,
     String from,
@@ -56,6 +61,8 @@ class TicketService {
     String seatClass,
     String seatNo,
     double price,
+    String checkInPosition,
+    String terminalArea,
     String carrier,
     String bookingReference,
     String purchasePlatform,
@@ -72,6 +79,8 @@ class TicketService {
       seatClass: seatClass,
       seatNo: seatNo,
       price: price,
+      checkInPosition: checkInPosition,
+      terminalArea: terminalArea,
       carrier: carrier,
       bookingReference: bookingReference,
       purchasePlatform: purchasePlatform,

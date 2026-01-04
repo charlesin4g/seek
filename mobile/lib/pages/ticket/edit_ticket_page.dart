@@ -1,9 +1,10 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:mobile/data/entities/ticket.dart';
+import 'package:mobile/data/services/ticket_service.dart';
 
 import '../../config/app_colors.dart';
-import '../../models/ticket.dart';
 import '../../services/snapshot_service.dart';
 import '../../services/station_api.dart';
 import '../../services/storage_service.dart';
@@ -32,17 +33,21 @@ class _EditTicketPageState extends State<EditTicketPage> {
 
   // 行程信息
   final TextEditingController _codeController = TextEditingController();
-  final TextEditingController _departStationController = TextEditingController();
-  final TextEditingController _arriveStationController = TextEditingController();
+  final TextEditingController _departStationController =
+      TextEditingController();
+  final TextEditingController _arriveStationController =
+      TextEditingController();
   late DateTime _departDateTime;
   late DateTime _arriveDateTime;
-  int get _durationMinutes => _arriveDateTime.difference(_departDateTime).inMinutes;
+  int get _durationMinutes =>
+      _arriveDateTime.difference(_departDateTime).inMinutes;
 
   // 车次/航班信息
   final TextEditingController _coachOrCabinController = TextEditingController();
   final TextEditingController _seatNoController = TextEditingController();
   String _seatTypeDisplay = '二等座';
-  final TextEditingController _gateOrCheckinController = TextEditingController();
+  final TextEditingController _gateOrCheckinController =
+      TextEditingController();
   final TextEditingController _waitingAreaController = TextEditingController();
 
   // 票务信息
@@ -56,7 +61,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
   final TextEditingController _passengerController = TextEditingController();
   final TextEditingController _remarkController = TextEditingController();
 
-  final TicketApi _ticketApi = TicketApi();
+  late final TicketService _ticketService;
   // 输入框焦点与站点联想
   final FocusNode _departFocus = FocusNode();
   final FocusNode _arriveFocus = FocusNode();
@@ -72,18 +77,17 @@ class _EditTicketPageState extends State<EditTicketPage> {
     super.initState();
     final t = widget.ticket;
     _ticketKindDisplay = t.type == '飞机' ? '飞机票' : '火车票';
-    _codeController.text = t.code;
-    _departStationController.text = t.departStation;
-    _arriveStationController.text = t.arriveStation;
-    _departDateTime = t.departTime;
-    _arriveDateTime = t.arriveTime;
-    _coachOrCabinController.text = t.coachOrCabin ?? '';
+    _codeController.text = t.transportNo;
+    _departStationController.text = t.from;
+    _arriveStationController.text = t.to;
+    _departDateTime = t.departureTime;
+    _arriveDateTime = t.arrivalTime;
+    _coachOrCabinController.text = t.seatClass ?? '';
     _seatNoController.text = t.seatNo ?? '';
-    _seatTypeDisplay = t.seatType ?? (_ticketKindCode == '火车' ? '二等座' : '经济舱');
-    _gateOrCheckinController.text = t.gateOrCheckin ?? '';
-    _waitingAreaController.text = t.waitingArea ?? '';
-    _priceController.text = t.price.toStringAsFixed(2);
-    _discountController.text = t.discount ?? '';
+    _seatTypeDisplay = _ticketKindCode == '火车' ? '二等座' : '经济舱';
+    _gateOrCheckinController.text = t.checkInPosition ?? '';
+    _waitingAreaController.text = t.terminalArea ?? '';
+    _priceController.text = t.price.toString();
     _departFocus.addListener(() {
       if (_ticketKindCode == '火车' && _departFocus.hasFocus) {
         _loadTopStations(isDepart: true);
@@ -96,7 +100,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
     });
 
     // 注册编辑票据表单快照提供者：离线切换前保存当前编辑状态
-    final key = 'ticket:edit:${widget.ticket.id ?? widget.ticket.code}';
+    final key = 'ticket:edit:${widget.ticket.id ?? widget.ticket.transportNo}';
     SnapshotService.instance.registerFormProvider(key, () async {
       return {
         'id': widget.ticket.id,
@@ -126,7 +130,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
   @override
   void dispose() {
     // 取消注册：页面销毁时移除提供者
-    final key = 'ticket:edit:${widget.ticket.id ?? widget.ticket.code}';
+    final key = 'ticket:edit:${widget.ticket.id ?? widget.ticket.transportNo}';
     SnapshotService.instance.unregisterFormProvider(key);
     _codeController.dispose();
     _departStationController.dispose();
@@ -145,7 +149,10 @@ class _EditTicketPageState extends State<EditTicketPage> {
     super.dispose();
   }
 
-  Future<void> _handleStationInput(String text, {required bool isDepart}) async {
+  Future<void> _handleStationInput(
+    String text, {
+    required bool isDepart,
+  }) async {
     if (_ticketKindCode != '火车') return;
     final FocusNode focus = isDepart ? _departFocus : _arriveFocus;
     if (!focus.hasFocus) return;
@@ -210,10 +217,12 @@ class _EditTicketPageState extends State<EditTicketPage> {
       return const SizedBox.shrink();
     }
 
-    final suggestions =
-        isDepart ? _departStationSuggestions : _arriveStationSuggestions;
-    final controller =
-        isDepart ? _departStationController : _arriveStationController;
+    final suggestions = isDepart
+        ? _departStationSuggestions
+        : _arriveStationSuggestions;
+    final controller = isDepart
+        ? _departStationController
+        : _arriveStationController;
 
     Widget buildContent() {
       if (suggestions.isEmpty) {
@@ -239,13 +248,15 @@ class _EditTicketPageState extends State<EditTicketPage> {
           ListTile(
             dense: true,
             title: Text(name),
-            subtitle:
-                subtitleParts.isNotEmpty ? Text(subtitleParts.join(' · ')) : null,
+            subtitle: subtitleParts.isNotEmpty
+                ? Text(subtitleParts.join(' · '))
+                : null,
             onTap: () {
               final display = city.isNotEmpty ? '$name（$city）' : name;
               controller.text = display;
-              controller.selection =
-                  TextSelection.collapsed(offset: controller.text.length);
+              controller.selection = TextSelection.collapsed(
+                offset: controller.text.length,
+              );
               setState(() => suggestions.clear());
             },
           ),
@@ -265,15 +276,12 @@ class _EditTicketPageState extends State<EditTicketPage> {
         border: Border.all(color: AppColors.borderLight),
         boxShadow: const [AppShadows.light],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: buildContent(),
-      ),
+      child: Material(color: Colors.transparent, child: buildContent()),
     );
   }
 
-
-  String _fmtDateTime(DateTime dt) => '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+  String _fmtDateTime(DateTime dt) =>
+      '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
 
   Future<void> _pickDateTime({required bool isDepart}) async {
     final DateTime initial = isDepart ? _departDateTime : _arriveDateTime;
@@ -290,7 +298,13 @@ class _EditTicketPageState extends State<EditTicketPage> {
     );
     if (time == null) return;
 
-    final DateTime picked = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    final DateTime picked = DateTime(
+      date.year,
+      date.month,
+      date.day,
+      time.hour,
+      time.minute,
+    );
     setState(() {
       if (isDepart) {
         _departDateTime = picked;
@@ -316,15 +330,22 @@ class _EditTicketPageState extends State<EditTicketPage> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(title: Text('座位类型', style: TextStyle(fontWeight: FontWeight.bold))),
+            const ListTile(
+              title: Text(
+                '座位类型',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
             const Divider(height: 0),
-            ...options.map((opt) => ListTile(
-                  title: Text(opt),
-                  onTap: () {
-                    setState(() => _seatTypeDisplay = opt);
-                    Navigator.pop(context);
-                  },
-                )),
+            ...options.map(
+              (opt) => ListTile(
+                title: Text(opt),
+                onTap: () {
+                  setState(() => _seatTypeDisplay = opt);
+                  Navigator.pop(context);
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -338,7 +359,9 @@ class _EditTicketPageState extends State<EditTicketPage> {
     try {
       final parsed = jsonDecode(raw);
       if (parsed is List) {
-        return parsed.map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e)).toList();
+        return parsed
+            .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+            .toList();
       }
       return [];
     } catch (_) {
@@ -374,20 +397,56 @@ class _EditTicketPageState extends State<EditTicketPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: codeCtrl, decoration: const InputDecoration(labelText: '站码*', hintText: '如 SHH、BJP'), textCapitalization: TextCapitalization.characters),
+              TextFormField(
+                controller: codeCtrl,
+                decoration: const InputDecoration(
+                  labelText: '站码*',
+                  hintText: '如 SHH、BJP',
+                ),
+                textCapitalization: TextCapitalization.characters,
+              ),
               const SizedBox(height: 8),
-              TextFormField(controller: nameCtrl, decoration: const InputDecoration(labelText: '站名*', hintText: '如 北京南')),
+              TextFormField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  labelText: '站名*',
+                  hintText: '如 北京南',
+                ),
+              ),
               const SizedBox(height: 8),
-              TextFormField(controller: cityCtrl, decoration: const InputDecoration(labelText: '城市', hintText: '如 北京')),
+              TextFormField(
+                controller: cityCtrl,
+                decoration: const InputDecoration(
+                  labelText: '城市',
+                  hintText: '如 北京',
+                ),
+              ),
               const SizedBox(height: 8),
-              TextFormField(controller: latCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: '纬度', hintText: '如 39.872')),
+              TextFormField(
+                controller: latCtrl,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: '纬度',
+                  hintText: '如 39.872',
+                ),
+              ),
               const SizedBox(height: 8),
-              TextFormField(controller: lonCtrl, keyboardType: TextInputType.numberWithOptions(decimal: true), decoration: const InputDecoration(labelText: '经度', hintText: '如 116.407')),
+              TextFormField(
+                controller: lonCtrl,
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                decoration: const InputDecoration(
+                  labelText: '经度',
+                  hintText: '如 116.407',
+                ),
+              ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
           ElevatedButton(
             onPressed: () async {
               final code = codeCtrl.text.trim();
@@ -404,9 +463,13 @@ class _EditTicketPageState extends State<EditTicketPage> {
                 if (lon != null) 'longitude': lon,
               };
               await _saveTrainStation(station);
-              final ctrl = isDepart ? _departStationController : _arriveStationController;
+              final ctrl = isDepart
+                  ? _departStationController
+                  : _arriveStationController;
               ctrl.text = city.isNotEmpty ? '$name（$city）' : name;
-              ctrl.selection = TextSelection.collapsed(offset: ctrl.text.length);
+              ctrl.selection = TextSelection.collapsed(
+                offset: ctrl.text.length,
+              );
               if (mounted) Navigator.pop(context);
             },
             child: const Text('保存'),
@@ -443,27 +506,40 @@ class _EditTicketPageState extends State<EditTicketPage> {
         'seatNo': _seatNoController.text.trim().isEmpty
             ? null
             : _seatNoController.text.trim(),
-        'price': price
+        'price': price,
       };
 
-      await _ticketApi.editTicket(widget.ticket.id!, payload);
+      await _ticketService.update(
+        widget.ticket.id!,
+        _ticketKindCode,
+        _codeController.text.trim(),
+        _departStationController.text.trim(),
+        _arriveStationController.text.trim(),
+        _departDateTime.toIso8601String(),
+        _arriveDateTime.toIso8601String(),
+        _coachOrCabinController.text.trim(),
+        _seatNoController.text.trim(),
+        price,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+      );
 
       if (mounted) {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('票据更新成功！'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('票据更新成功！'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('更新失败: $e'), backgroundColor: Colors.red),
-        );
-        // 接口失败：提示用户切换到离线模式
-        await showOfflineSwitchPrompt(context);
-      }
+      // TODO: handle error (更新失败)
     }
   }
 
@@ -530,9 +606,7 @@ class _EditTicketPageState extends State<EditTicketPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: AppColors.backgroundGradient,
-      ),
+      decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
@@ -590,8 +664,14 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                 initialValue: _ticketKindDisplay,
                                 isExpanded: true,
                                 items: const [
-                                  DropdownMenuItem(value: '火车票', child: Text('火车票')),
-                                  DropdownMenuItem(value: '飞机票', child: Text('飞机票')),
+                                  DropdownMenuItem(
+                                    value: '火车票',
+                                    child: Text('火车票'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '飞机票',
+                                    child: Text('飞机票'),
+                                  ),
                                 ],
                                 onChanged: (value) {
                                   if (value != null) {
@@ -601,17 +681,27 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   focusedBorder: const OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primaryBlue,
+                                      width: 2,
+                                    ),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
@@ -626,7 +716,9 @@ class _EditTicketPageState extends State<EditTicketPage> {
                         CustomFormField(
                           label: _ticketKindCode == '火车' ? '车次*' : '航班号*',
                           controller: _codeController,
-                          hintText: _ticketKindCode == '火车' ? '如 G1234' : '如 MU5123',
+                          hintText: _ticketKindCode == '火车'
+                              ? '如 G1234'
+                              : '如 MU5123',
                           keyboardType: TextInputType.text,
                         ),
                         const SizedBox(height: 16),
@@ -635,7 +727,8 @@ class _EditTicketPageState extends State<EditTicketPage> {
                           controller: _departStationController,
                           hintText: '请输入出发地',
                           focusNode: _departFocus,
-                          onChanged: (v) => _handleStationInput(v, isDepart: true),
+                          onChanged: (v) =>
+                              _handleStationInput(v, isDepart: true),
                         ),
                         _buildStationSuggestionList(isDepart: true),
                         const SizedBox(height: 16),
@@ -644,7 +737,8 @@ class _EditTicketPageState extends State<EditTicketPage> {
                           controller: _arriveStationController,
                           hintText: '请输入到达地',
                           focusNode: _arriveFocus,
-                          onChanged: (v) => _handleStationInput(v, isDepart: false),
+                          onChanged: (v) =>
+                              _handleStationInput(v, isDepart: false),
                         ),
                         _buildStationSuggestionList(isDepart: false),
                         const SizedBox(height: 16),
@@ -714,7 +808,9 @@ class _EditTicketPageState extends State<EditTicketPage> {
                         CustomFormField(
                           label: _ticketKindCode == '火车' ? '检票口' : '登机口/值机柜台',
                           controller: _gateOrCheckinController,
-                          hintText: _ticketKindCode == '火车' ? '如 A12' : '如 B12/岛2',
+                          hintText: _ticketKindCode == '火车'
+                              ? '如 A12'
+                              : '如 B12/岛2',
                         ),
                         const SizedBox(height: 16),
                         CustomFormField(
@@ -759,30 +855,54 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                 initialValue: _ticketCategoryDisplay,
                                 isExpanded: true,
                                 items: const [
-                                  DropdownMenuItem(value: '成人票', child: Text('成人票')),
-                                  DropdownMenuItem(value: '儿童票', child: Text('儿童票')),
-                                  DropdownMenuItem(value: '学生票', child: Text('学生票')),
-                                  DropdownMenuItem(value: '军人票', child: Text('军人票')),
+                                  DropdownMenuItem(
+                                    value: '成人票',
+                                    child: Text('成人票'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '儿童票',
+                                    child: Text('儿童票'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '学生票',
+                                    child: Text('学生票'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '军人票',
+                                    child: Text('军人票'),
+                                  ),
                                 ],
                                 onChanged: (value) {
                                   if (value != null) {
-                                    setState(() => _ticketCategoryDisplay = value);
+                                    setState(
+                                      () => _ticketCategoryDisplay = value,
+                                    );
                                   }
                                 },
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   focusedBorder: const OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primaryBlue,
+                                      width: 2,
+                                    ),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
@@ -807,30 +927,54 @@ class _EditTicketPageState extends State<EditTicketPage> {
                                 initialValue: _ticketStatusDisplay,
                                 isExpanded: true,
                                 items: const [
-                                  DropdownMenuItem(value: '已支付', child: Text('已支付')),
-                                  DropdownMenuItem(value: '未支付', child: Text('未支付')),
-                                  DropdownMenuItem(value: '已退票', child: Text('已退票')),
-                                  DropdownMenuItem(value: '已改签', child: Text('已改签')),
+                                  DropdownMenuItem(
+                                    value: '已支付',
+                                    child: Text('已支付'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '未支付',
+                                    child: Text('未支付'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '已退票',
+                                    child: Text('已退票'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: '已改签',
+                                    child: Text('已改签'),
+                                  ),
                                 ],
                                 onChanged: (value) {
                                   if (value != null) {
-                                    setState(() => _ticketStatusDisplay = value);
+                                    setState(
+                                      () => _ticketStatusDisplay = value,
+                                    );
                                   }
                                 },
                                 decoration: InputDecoration(
                                   border: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.borderLight),
+                                    borderSide: BorderSide(
+                                      color: AppColors.borderLight,
+                                    ),
                                   ),
                                   focusedBorder: const OutlineInputBorder(
                                     borderRadius: AppBorderRadius.large,
-                                    borderSide: BorderSide(color: AppColors.primaryBlue, width: 2),
+                                    borderSide: BorderSide(
+                                      color: AppColors.primaryBlue,
+                                      width: 2,
+                                    ),
                                   ),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
                                 ),
                               ),
                             ),
