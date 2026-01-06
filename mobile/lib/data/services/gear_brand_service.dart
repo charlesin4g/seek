@@ -80,7 +80,6 @@ class GearBrandService {
     double? rating,
     String? notes,
   }) async {
-    final now = DateTime.now();
     final brand = GearBrand(
       name: name,
       englishName: englishName,
@@ -88,7 +87,6 @@ class GearBrandService {
       category: category,
       country: country,
       foundedYear: foundedYear,
-      priceRange: priceRange,
       specialty: specialty,
       officialWebsite: officialWebsite,
       socialMedia: socialMedia,
@@ -138,7 +136,6 @@ class GearBrandService {
       category: category,
       country: country,
       foundedYear: foundedYear,
-      priceRange: priceRange,
       specialty: specialty,
       officialWebsite: officialWebsite,
       socialMedia: socialMedia,

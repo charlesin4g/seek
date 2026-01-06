@@ -1,6 +1,5 @@
 import 'package:floor/floor.dart';
 import 'package:mobile/annotations/field_info.dart';
-import 'package:mobile/data/datetime_converter.dart';
 
 @Entity(tableName: 'gear_brand')
 class GearBrand {
@@ -45,20 +44,6 @@ class GearBrand {
   @ColumnInfo(name: 'founded_year')
   @FieldInfo('成立年份', example: '1966')
   final int? foundedYear;
-
-  @ColumnInfo(name: 'price_range')
-  @FieldInfo(
-    '价格区间',
-    example: 'midHigh',
-    enumValues: [
-      'low: 低端(经济型)',
-      'mid: 中端(性价比)',
-      'midHigh: 中高端',
-      'high: 高端(专业级)',
-      'luxury: 奢侈级',
-    ],
-  )
-  final String? priceRange;
 
   @ColumnInfo(name: 'specialty')
   @FieldInfo(
@@ -123,7 +108,6 @@ class GearBrand {
     this.category,
     this.country,
     this.foundedYear,
-    this.priceRange,
     this.specialty,
     this.officialWebsite,
     this.socialMedia,

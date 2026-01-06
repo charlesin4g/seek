@@ -4,6 +4,21 @@
 /// 活动记录的时候一场徒步/跑步/骑行行为，包含轨迹文件
 /// (已完成)计划记录的是一个或多个活动的总和
 /// 行程可以关联到某一场具体的活动
+/// create table plans
+///(
+///    id                 INTEGER not null
+///        primary key autoincrement,
+///    name               TEXT    not null,
+///    start_date         TEXT,
+///    end_date           TEXT,
+///    description        TEXT,
+///    distance           REAL,
+///    estimated_duration INTEGER,
+///    location           TEXT,
+///    plan_status        TEXT,
+///    required_gear      TEXT,
+///    weather_condition  TEXT
+///);
 library;
 import 'package:floor/floor.dart';
 import 'package:mobile/annotations/field_info.dart';
