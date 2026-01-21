@@ -86,7 +86,7 @@ class _GearPageState extends State<GearPage> {
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
-          backgroundColor: AppColors.primaryLightBlue, // 使用浅蓝色背景
+          backgroundColor: Colors.transparent, // 透明背景
           foregroundColor: AppColors.textPrimary, // 文字颜色
           elevation: 0,
           title: Row(
@@ -98,7 +98,7 @@ class _GearPageState extends State<GearPage> {
                   gradient: AppColors.primaryGradient, // 使用主色调渐变
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: const Icon(Icons.hiking, color: Colors.white),
+                child: const Icon(Icons.hiking, color: Colors.black), // 黑色图标
               ),
               const SizedBox(width: 12),
               Column(
@@ -318,7 +318,7 @@ class _GearPageState extends State<GearPage> {
           style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
-            color: AppColors.primaryDarkBlue,
+            color: AppColors.primaryGreen,
           ),
         ),
         const SizedBox(height: 4),
@@ -353,15 +353,15 @@ class _GearPageState extends State<GearPage> {
               Text(categoryDict[entry.key] ?? entry.key),
               Text(
                 _formatPrice2(entry.value),
-                style: TextStyle(color: Colors.blue.shade700),
+                style: const TextStyle(color: AppColors.secondaryBlue),
               ),
             ],
           ),
           const SizedBox(height: 8),
           LinearProgressIndicator(
             value: totalValue > 0 ? entry.value / totalValue : 0,
-            backgroundColor: Colors.grey.shade200,
-            valueColor: AlwaysStoppedAnimation<Color>(Colors.blue.shade400),
+            backgroundColor: Colors.white.withValues(alpha: 0.1),
+            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.secondaryLightBlue),
           ),
           const SizedBox(height: 16),
         ]),
@@ -369,10 +369,10 @@ class _GearPageState extends State<GearPage> {
           alignment: Alignment.centerRight,
           child: Text(
             _formatPrice2(totalValue),
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Colors.blue.shade700,
+              color: AppColors.secondaryBlue,
             ),
           ),
         ),
@@ -415,7 +415,7 @@ class _GearPageState extends State<GearPage> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: nonZeroEntries.map((entry) {
             final height = maxValue > 0 ? entry.value / maxValue : 0.0;
-            final color = entry.key == '神秘农场' ? Colors.blue : Colors.green;
+            final color = entry.key == '神秘农场' ? AppColors.secondaryBlue : AppColors.primaryGreen;
             return _buildBrandBar(
               entry.key,
               entry.value,
@@ -463,7 +463,7 @@ class _GearPageState extends State<GearPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: brandCounts.entries.map((entry) {
-            final color = entry.key == '神秘农场' ? Colors.blue : Colors.green;
+            final color = entry.key == '神秘农场' ? AppColors.secondaryBlue : AppColors.primaryGreen;
             return _buildQuantityBar(entry.key, entry.value, color);
           }).toList(),
         ),

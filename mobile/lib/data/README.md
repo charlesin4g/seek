@@ -1,5 +1,3 @@
-好的，我们来详细介绍一下 Flutter 中的 Floor 框架。
-
 ### 1. 什么是 Floor？
 
 Floor 是一个在 Flutter 和 Dart 上构建的**轻量级、响应式且类型安全的 SQLite ORM（对象关系映射）库**。它的设计灵感来源于 Android 的 Room 持久化库。

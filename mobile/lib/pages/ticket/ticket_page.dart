@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/data/database_provider.dart';
 import 'package:mobile/data/services/ticket_service.dart';
-import '../../widgets/section_card.dart';
 import '../../data/entities/ticket.dart';
 import 'add_ticket_page.dart';
 import 'edit_ticket_page.dart';
@@ -54,12 +53,6 @@ class _TicketPageState extends State<TicketPage> {
     return await _ticketService!.getAllTickets();
   }
 
-  String _fmtRange(Ticket t) {
-    String fmt(DateTime dt) =>
-        '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
-    return '${fmt(t.departureTime)} → ${fmt(t.arrivalTime)}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -69,29 +62,23 @@ class _TicketPageState extends State<TicketPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
-          title: Row(
-            children: const [
-              Icon(Icons.confirmation_number, color: AppColors.primaryBlue),
-              SizedBox(width: 8),
-              Text(
-                '票据管理',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
+          centerTitle: true,
+          title: const Text(
+            '票据记录',
+            style: TextStyle(
+              fontSize: AppFontSizes.title,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
           ),
           actions: const [],
         ),
         body: _buildBody(),
         floatingActionButton: FloatingActionButton(
-          backgroundColor: AppColors.primaryBlue,
+          backgroundColor: AppColors.primaryGreen,
           onPressed: _handleAddTicket,
           child: const Icon(Icons.add, color: Colors.white),
         ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       ),
     );
   }
@@ -146,93 +133,190 @@ class _TicketPageState extends State<TicketPage> {
     final tickets = _tickets;
 
     return RefreshIndicator(
-      // 修复：使用 () async => 语法包装 void 方法
+      color: AppColors.primaryGreen,
       onRefresh: () async {
         await _reloadTicketsQuietly();
       },
       child: RefreshAndEmpty(
         isEmpty: tickets.isEmpty,
-        // 修复：这里也需要返回 Future<bool>
         onRefresh: _reloadTicketsQuietly,
-        emptyIcon: Icons.confirmation_number,
+        emptyIcon: Icons.confirmation_number_outlined,
         emptyTitle: '暂无票据',
-        emptySubtitle: '下拉刷新或点击右下角 + 新建',
+        emptySubtitle: '记录你的每一次出发',
         emptyActionText: null,
         onEmptyAction: null,
+        child: ListView.separated(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(16),
+          separatorBuilder: (_, __) => const SizedBox(height: 16),
+          itemCount: tickets.length,
+          itemBuilder: (_, i) {
+            final t = tickets[i];
+            return _TicketItemCard(
+              ticket: t,
+              onTap: () => _handleEditTicket(t),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _TicketItemCard extends StatelessWidget {
+  final Ticket ticket;
+  final VoidCallback onTap;
+
+  const _TicketItemCard({required this.ticket, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final bool isTrain = ticket.type == '火车' || ticket.type == 'train';
+    final Color typeColor = isTrain ? AppColors.primaryGreen : AppColors.secondaryBlue;
+    final IconData typeIcon = isTrain ? Icons.train : Icons.flight;
+    final String typeName = isTrain ? '火车票' : '飞机票';
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.backgroundWhite,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [AppShadows.light],
+          border: Border.all(color: AppColors.borderLight),
+        ),
         child: Column(
           children: [
-            Expanded(
-              child: ListView.separated(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                separatorBuilder: (_, __) => const SizedBox(height: 16),
-                itemCount: tickets.length,
-                itemBuilder: (_, i) {
-                  final t = tickets[i];
-                  return SectionCard(
-                    title: t.type == '火车' ? '火车票' : '飞机票',
-                    trailing: IconButton(
-                      icon: const Icon(
-                        Icons.edit,
-                        color: AppColors.primaryDarkBlue,
-                      ),
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(
-                        minWidth: 28,
-                        minHeight: 28,
-                      ),
-                      tooltip: '编辑',
-                      onPressed: () => _handleEditTicket(t),
+            // Header
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: typeColor.withOpacity(0.08),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              ),
+              child: Row(
+                children: [
+                  Icon(typeIcon, size: 18, color: typeColor),
+                  const SizedBox(width: 8),
+                  Text(
+                    ticket.transportNo.isNotEmpty ? ticket.transportNo : typeName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: typeColor,
                     ),
+                  ),
+                  const Spacer(),
+                  // Status is not persisted in Ticket entity yet, so we omit it or use a placeholder if needed.
+                  // For now, let's just show seat class if available as a tag
+                  if (ticket.seatClass != null && ticket.seatClass!.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.backgroundWhite,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: typeColor.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        ticket.seatClass!,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: typeColor,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.place,
-                            size: 18,
-                            color: AppColors.primaryBlue,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text('${t.from} → ${t.to}')),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.access_time,
-                            size: 18,
-                            color: AppColors.primaryBlue,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(child: Text(_fmtRange(t))),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.chair,
-                            size: 18,
-                            color: AppColors.primaryBlue,
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              '${t.seatClass ?? ''} ${t.seatNo ?? ''}'.trim(),
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildStation(ticket.from, isStart: true),
+                      const Icon(Icons.arrow_forward, color: AppColors.borderDefault),
+                      _buildStation(ticket.to, isStart: false),
                     ],
-                  );
-                },
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1, color: AppColors.divider),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildInfoItem('出发时间', _formatTime(ticket.departureTime)),
+                      _buildInfoItem('座位', ticket.seatNo ?? '-'),
+                      _buildInfoItem('价格', ticket.price != null ? '¥${ticket.price!.toStringAsFixed(0)}' : '-'),
+                    ],
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildStation(String name, {required bool isStart}) {
+    return Column(
+      crossAxisAlignment: isStart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        Text(
+          name,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: isStart ? AppColors.primaryLightGreen : AppColors.secondaryLightBlue,
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            isStart ? '出发' : '到达',
+            style: TextStyle(
+              fontSize: 10,
+              color: isStart ? AppColors.primaryDarkGreen : AppColors.secondaryBlue,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfoItem(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatTime(DateTime dt) {
+    return '${dt.month}月${dt.day}日 ${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
   }
 }

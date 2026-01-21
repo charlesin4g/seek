@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../config/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/storage_service.dart';
-import '../../utils/responsive.dart';
 import '../ticket/ticket_page.dart';
 import '../gear/gear_assets_page.dart';
+import '../../services/repository/activity_repository.dart';
+import '../activity/activity_trip.dart';
+import '../activity/activity_detail_page.dart';
+import 'settings_page.dart';
 
 class UserOverviewPage extends StatefulWidget {
   const UserOverviewPage({super.key});
@@ -16,240 +19,109 @@ class UserOverviewPage extends StatefulWidget {
 
 class _UserOverviewPageState extends State<UserOverviewPage> {
   late String _displayName;
+  late Future<List<ActivityTrip>> _tripsFuture;
 
   @override
   void initState() {
     super.initState();
     final cached = StorageService().getCachedUserSync();
-    _displayName = (cached?['displayName'] ?? cached?['username'] ?? AuthService().currentUser ?? '旅行者').toString();
-  }
-
-  void _showComingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('功能开发中，敬请期待')), 
-    );
+    _displayName = (cached?['displayName'] ??
+            cached?['username'] ??
+            AuthService().currentUser ??
+            '旅行者')
+        .toString();
+    _tripsFuture = ActivityRepository.instance.getActivityTripsPage(limit: 5, offset: 0);
   }
 
   @override
   Widget build(BuildContext context) {
-    final Gradient headerGradient = const LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        Color(0xFF7B5CFF),
-        Color(0xFFB178FF),
-      ],
-    );
-
     return Container(
-      decoration: BoxDecoration(
-        gradient: headerGradient,
+      decoration: const BoxDecoration(
+        gradient: AppColors.backgroundGradient,
       ),
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: Responsive.responsivePadding(context).copyWith(bottom: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Top Profile Card
+                _ProfileCard(displayName: _displayName),
+                const SizedBox(height: 20),
+
+                // Shortcuts Card (Assets & Tickets)
+                _ShortcutsCard(
+                  onAssetsTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const GearAssetsPage()),
+                    );
+                  },
+                  onTicketsTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const TicketPage()),
+                    );
+                  },
+                ),
                 const SizedBox(height: 24),
-                // 头像
-                Container(
-                  width: 82,
-                  height: 82,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 2),
-                    boxShadow: const [AppShadows.light],
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'lib/assests/avatar.png',
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  _displayName,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: AppFontSizes.titleLarge,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '热爱徒步的旅行达人',
+
+                // Recent Trips Header
+                const Text(
+                  '近期行程',
                   style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.9),
-                    fontSize: AppFontSizes.body,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // 顶部统计
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: const [
-                    _ProfileStatItem(label: '总行程', value: '2,856'),
-                    _ProfileStatItem(label: '总天数', value: '89'),
-                    _ProfileStatItem(label: '访问城市', value: '23'),
-                    _ProfileStatItem(label: '总花费', value: '45,600'),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                // 功能卡片
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: AppBorderRadius.extraLarge,
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _FeatureCard(
-                              icon: Icons.inventory_2_outlined,
-                              iconBackground: AppColors.primaryGradient,
-                              title: '个人资产',
-                              subtitle: '装备清单管理',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const GearAssetsPage()),
-                                );
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _FeatureCard(
-                              icon: Icons.receipt_long,
-                              iconBackground: AppColors.secondaryGradient,
-                              title: '车票记录',
-                              subtitle: '交通出行历史',
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => const TicketPage()),
-                                );
-                              },
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _FeatureCard(
-                              icon: Icons.pie_chart_outline,
-                              iconBackground: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFFFFB74D), Color(0xFFFF8A65)],
-                              ),
-                              title: '消费分析',
-                              subtitle: '支出统计报告',
-                              onTap: _showComingSoon,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _FeatureCard(
-                              icon: Icons.settings_outlined,
-                              iconBackground: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Color(0xFFB0BEC5), Color(0xFF90A4AE)],
-                              ),
-                              title: '设置选项',
-                              subtitle: '账户与偏好设置',
-                              onTap: _showComingSoon,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // 最近记录
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '最近记录',
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.95),
-                      fontSize: AppFontSizes.subtitle,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.16),
-                    borderRadius: AppBorderRadius.extraLarge,
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.14),
-                          borderRadius: AppBorderRadius.large,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Text(
-                              '03',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: AppFontSizes.subtitle,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              '15',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: AppFontSizes.body,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Expanded(
-                        child: Text(
-                          '华山西峰徒步',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: AppFontSizes.bodyLarge,
-                            fontWeight: FontWeight.w600,
+
+                // Recent Trips List
+                FutureBuilder<List<ActivityTrip>>(
+                  future: _tripsFuture,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return Text('加载失败: ${snapshot.error}', style: const TextStyle(color: AppColors.error));
+                    }
+                    final trips = snapshot.data ?? [];
+                    if (trips.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text(
+                            '暂无行程记录',
+                            style: TextStyle(color: AppColors.textSecondary),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        '¥680',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: AppFontSizes.bodyLarge,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: trips.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final trip = trips[index];
+                        final dt = trip.activityTime ?? DateTime.now();
+                        return _TripItem(
+                          month: '${dt.month}月',
+                          day: '${dt.day}',
+                          title: trip.title,
+                          trip: trip,
+                        );
+                      },
+                    );
+                  },
                 ),
+                const SizedBox(height: 40), // Bottom padding
               ],
             ),
           ),
@@ -259,92 +131,256 @@ class _UserOverviewPageState extends State<UserOverviewPage> {
   }
 }
 
-class _ProfileStatItem extends StatelessWidget {
-  const _ProfileStatItem({required this.label, required this.value});
+class _ProfileCard extends StatelessWidget {
+  final String displayName;
 
-  final String label;
-  final String value;
+  const _ProfileCard({required this.displayName});
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: AppFontSizes.titleLarge,
-            fontWeight: FontWeight.w700,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [AppShadows.medium],
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          // Header: Avatar, Name, Settings
+          Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryGreen,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                ),
+                child: const Icon(Icons.person, color: Colors.black, size: 36),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  displayName.isNotEmpty ? displayName : 'seek user',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined, color: AppColors.textPrimary, size: 28),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SettingsPage()),
+                  );
+                },
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            color: Colors.white.withValues(alpha: 0.9),
-            fontSize: AppFontSizes.body,
+          const SizedBox(height: 24),
+          // Metrics Grid
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatItem('105', '出行次数'),
+              _buildStatItem('598', '总里程(km)'),
+              _buildStatItem('65476m', '总爬升(m)'),
+            ],
           ),
-        ),
-      ],
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildStatItem('1255', '运动天数'),
+              _buildStatItem('34', '访问城市'),
+              _buildStatItem('77543', '总资产(元)'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String value, String label) {
+    return SizedBox(
+      width: 80, // Fixed width for alignment
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primaryGreen,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-class _FeatureCard extends StatelessWidget {
-  const _FeatureCard({
-    required this.icon,
-    required this.iconBackground,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
+class _ShortcutsCard extends StatelessWidget {
+  final VoidCallback onAssetsTap;
+  final VoidCallback onTicketsTap;
+
+  const _ShortcutsCard({
+    required this.onAssetsTap,
+    required this.onTicketsTap,
   });
 
-  final IconData icon;
-  final Gradient iconBackground;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: const [AppShadows.light],
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          _buildShortcutItem(
+            Icons.account_balance_wallet_outlined, // Using similar icon
+            '我的资产',
+            onAssetsTap,
+          ),
+          const Divider(height: 1, color: AppColors.divider),
+          _buildShortcutItem(
+            Icons.confirmation_number_outlined, // Ticket icon
+            '我的车票',
+            onTicketsTap,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShortcutItem(IconData icon, String label, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primaryGreen, size: 24),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const Spacer(),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TripItem extends StatelessWidget {
+  final String month;
+  final String day;
   final String title;
-  final String subtitle;
-  final VoidCallback onTap;
+  final ActivityTrip trip;
+
+  const _TripItem({
+    required this.month,
+    required this.day,
+    required this.title,
+    required this.trip,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: AppBorderRadius.large,
-      child: Ink(
-        padding: const EdgeInsets.all(16),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ActivityDetailPage(trip: trip)),
+        );
+      },
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.16),
-          borderRadius: AppBorderRadius.large,
+          color: AppColors.backgroundWhite,
+          borderRadius: BorderRadius.circular(30), // Pill shape
+          boxShadow: const [AppShadows.light],
+          border: Border.all(color: AppColors.borderLight),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
+            // Date Badge
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    month,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  Text(
+                    day,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Placeholder Box (or image if available)
             Container(
-              width: 36,
-              height: 36,
+              width: 40,
+              height: 40,
               decoration: BoxDecoration(
-                gradient: iconBackground,
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.primaryGreen.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon, size: 20, color: Colors.white),
+              child: const Icon(Icons.directions_walk, color: AppColors.primaryGreen, size: 24),
             ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: AppFontSizes.bodyLarge,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.9),
-                fontSize: AppFontSizes.body,
+            const SizedBox(width: 16),
+            // Title
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.textPrimary,
+                ),
               ),
             ),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary, size: 20),
+            const SizedBox(width: 8),
           ],
         ),
       ),

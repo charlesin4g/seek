@@ -8,10 +8,8 @@ import '../../config/app_colors.dart';
 import '../../services/snapshot_service.dart';
 import '../../services/station_api.dart';
 import '../../services/storage_service.dart';
-import '../../services/ticket_api.dart';
 import '../../utils/responsive.dart';
 import '../../widgets/form_field.dart';
-import '../../widgets/offline_prompt.dart'; // 接口失败时提示切换离线
 import '../../widgets/section_card.dart';
 import '../../widgets/selector_field.dart';
 import 'widgets/ticket_summary_card.dart';
@@ -495,20 +493,6 @@ class _EditTicketPageState extends State<EditTicketPage> {
       );
 
       final price = double.tryParse(_priceController.text.trim()) ?? 0.0;
-      final payload = {
-        'category': _ticketKindCode == '飞机' ? '飞机' : '火车',
-        'travelNo': _codeController.text.trim(),
-        'fromPlace': _departStationController.text.trim(),
-        'toPlace': _arriveStationController.text.trim(),
-        'departureTime': _departDateTime.toIso8601String(),
-        'arrivalTime': _arriveDateTime.toIso8601String(),
-        'seatClass': _seatTypeDisplay,
-        'seatNo': _seatNoController.text.trim().isEmpty
-            ? null
-            : _seatNoController.text.trim(),
-        'price': price,
-      };
-
       await _ticketService.update(
         widget.ticket.id!,
         _ticketKindCode,
@@ -616,12 +600,15 @@ class _EditTicketPageState extends State<EditTicketPage> {
             '编辑票据',
             style: TextStyle(
               fontSize: AppFontSizes.title,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
           centerTitle: true,
-          iconTheme: const IconThemeData(color: AppColors.textPrimary),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
         body: SafeArea(
           child: ResponsiveContainer(

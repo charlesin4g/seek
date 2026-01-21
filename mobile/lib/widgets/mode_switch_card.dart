@@ -23,11 +23,9 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
     return Container(
       padding: widget.padding ?? const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.9),
+        color: AppColors.backgroundWhite,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        boxShadow: const [AppShadows.light],
       ),
       child: Stack(
         children: [
@@ -37,7 +35,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
             child: ValueListenableBuilder<bool>(
               valueListenable: isOfflineListenable,
               builder: (context, offline, _) {
-                final color = offline ? Colors.grey : AppColors.primaryBlue;
+                final color = offline ? AppColors.textSecondary : AppColors.primaryGreen;
                 final icon = offline ? Icons.cloud_off : Icons.cloud_queue;
                 final text = offline ? '离线' : '在线';
                 return Row(
@@ -72,7 +70,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
                         child: Icon(
                           offline ? Icons.wifi : Icons.wifi_off,
                           key: ValueKey(offline),
-                          color: offline ? AppColors.primaryBlue : Colors.grey,
+                          color: offline ? AppColors.primaryGreen : AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -89,7 +87,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
                   Expanded(
                     child: Text(
                       widget.title,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                     ),
                   ),
                   IconButton(
@@ -98,7 +96,7 @@ class _ModeSwitchCardState extends State<ModeSwitchCard> with SingleTickerProvid
                     icon: AnimatedRotation(
                       duration: const Duration(milliseconds: 200),
                       turns: _expanded ? 0.0 : 0.25,
-                      child: const Icon(Icons.expand_more),
+                      child: const Icon(Icons.expand_more, color: AppColors.textPrimary),
                     ),
                   ),
                 ],

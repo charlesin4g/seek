@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:mobile/data/entities/ticket.dart';
 import 'package:mobile/data/services/ticket_service.dart';
 
 import '../../config/app_colors.dart';
@@ -645,16 +644,19 @@ class _AddTicketPageState extends State<AddTicketPage> {
         appBar: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
+          centerTitle: true,
           title: const Text(
             '添加票据',
             style: TextStyle(
               fontSize: AppFontSizes.title,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.bold,
               color: AppColors.textPrimary,
             ),
           ),
-          centerTitle: true,
-          iconTheme: const IconThemeData(color: AppColors.textPrimary),
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: AppColors.textPrimary),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
         body: SafeArea(
           child: ResponsiveContainer(
@@ -666,15 +668,16 @@ class _AddTicketPageState extends State<AddTicketPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    TicketSummaryCard(
-                      ticketKindDisplay: _ticketKindDisplay,
-                      codeController: _codeController,
-                      departController: _departStationController,
-                      arriveController: _arriveStationController,
-                      priceController: _priceController,
-                      departTime: _departDateTime,
-                      arriveTime: _arriveDateTime,
-                    ),
+                    // 顶部卡片
+                      TicketSummaryCard(
+                        ticketKindDisplay: _ticketKindDisplay,
+                        codeController: _codeController,
+                        departController: _departStationController,
+                        arriveController: _arriveStationController,
+                        priceController: _priceController,
+                        departTime: _departDateTime,
+                        arriveTime: _arriveDateTime,
+                      ),
                     const SizedBox(height: 16),
                     SectionCard(
                       title: '票种',

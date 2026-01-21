@@ -9,7 +9,6 @@ import 'services/user_api.dart';
 import 'services/env.dart';
 import 'services/storage_service.dart';
 import 'config/app_colors.dart';
-import 'utils/responsive.dart';
 import 'package:health/health.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -575,193 +574,339 @@ class HomePage extends StatelessWidget {
                 '旅行者')
             .toString();
 
-    // 行程卡片构建方法保持不变
-    Widget buildTripCard({
-      required String from,
-      required String to,
-      required String detail,
-      required String badgeText,
-      required Color badgeColor,
-    }) {
-      return Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppColors.backgroundWhite,
-          borderRadius: AppBorderRadius.extraLarge,
-          boxShadow: const [AppShadows.light],
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.primaryGradient,
-              ),
-              child: const Icon(
-                Icons.flight_takeoff,
-                size: 20,
-                color: AppColors.textWhite,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$from → $to',
-                    style: const TextStyle(
-                      fontSize: AppFontSizes.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    detail,
-                    style: const TextStyle(
-                      fontSize: AppFontSizes.body,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: badgeColor.withOpacity(0.16),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Text(
-                badgeText,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: badgeColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
+          // 背景装饰
           const Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(gradient: AppColors.backgroundGradient),
             ),
           ),
+          // 顶部装饰圆 - 增加自然氛围
+          Positioned(
+            top: -100,
+            right: -100,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primaryGreen.withOpacity(0.05),
+              ),
+            ),
+          ),
+          
           SafeArea(
-            child: ResponsiveContainer(
-              child: Column(
-                children: [
-                  // 头部区域
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 12),
-                        // 问候语
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+            child: Column(
+              children: [
+                // 头部区域
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: AppColors.primaryLightGreen,
+                        child: Text(
+                          displayName.isNotEmpty ? displayName[0] : '旅',
+                          style: const TextStyle(
+                            fontSize: AppFontSizes.title,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryDarkGreen,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text(
-                                    '早安，旅行者',
-                                    style: TextStyle(
-                                      fontSize: AppFontSizes.subtitle,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '愿每次旅程元气满满！',
-                                    style: TextStyle(
-                                      fontSize: Responsive.responsiveFontSize(
-                                        context,
-                                        AppFontSizes.body,
-                                      ),
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
+                            const Text(
+                              '早安，旅行者',
+                              style: TextStyle(
+                                fontSize: AppFontSizes.body,
+                                color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            CircleAvatar(
-                              radius: 20,
-                              backgroundColor: AppColors.backgroundWhite,
-                              child: Text(
-                                displayName.isNotEmpty ? displayName[0] : '旅',
-                                style: const TextStyle(
-                                  fontSize: AppFontSizes.subtitle,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.primaryDarkBlue,
-                                ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '准备好出发了吗？',
+                              style: const TextStyle(
+                                fontSize: AppFontSizes.title,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
-
-                        // Row 2: 统计卡片 (直接使用封装好的组件)
+                      ),
+                      IconButton(
+                        onPressed: () {}, // TODO: Notifications
+                        icon: const Icon(Icons.notifications_outlined),
+                        color: AppColors.textPrimary,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // 滚动内容区域
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 健康数据概览
                         const HealthStatsCard(),
-
+                        const SizedBox(height: 24),
+                        
+                        // 即将开始的行程
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '即将出行',
+                              style: TextStyle(
+                                fontSize: AppFontSizes.subtitle,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => onNavigate(3), // Jump to Plan
+                              child: const Text('查看全部'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        _buildTripCard(
+                          context,
+                          from: '北京',
+                          to: '西安',
+                          date: '明天 14:30',
+                          seat: '三等座 12车06F',
+                          badgeText: '18小时',
+                          badgeColor: AppColors.warning,
+                        ),
+                        _buildTripCard(
+                          context,
+                          from: '西安',
+                          to: '拉萨',
+                          date: '3月15日 09:45',
+                          seat: '软卧 32A',
+                          badgeText: '5天',
+                          badgeColor: AppColors.primaryGreen,
+                        ),
+                        const SizedBox(height: 24),
+                        
+                        // 探索建议
+                        const Text(
+                          '探索发现',
+                          style: TextStyle(
+                            fontSize: AppFontSizes.subtitle,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        _buildDiscoveryCard(),
                         const SizedBox(height: 24),
                       ],
                     ),
                   ),
-                  // 下方滚动区域
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '即将出行',
-                            style: TextStyle(
-                              fontSize: AppFontSizes.subtitle,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textPrimary,
-                            ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTripCard(
+    BuildContext context, {
+    required String from,
+    required String to,
+    required String date,
+    required String seat,
+    required String badgeText,
+    required Color badgeColor,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.backgroundWhite,
+        borderRadius: AppBorderRadius.extraLarge,
+        boxShadow: [AppShadows.light],
+        border: Border.all(color: AppColors.borderLight),
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                _buildLocationNode(from, isStart: true),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Column(
+                      children: [
+                        Text(
+                          badgeText,
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: badgeColor,
+                            fontWeight: FontWeight.bold,
                           ),
-                          const SizedBox(height: 12),
-                          buildTripCard(
-                            from: '北京',
-                            to: '西安',
-                            detail: '明天 14:30 · 三等座 12车06F',
-                            badgeText: '18小时',
-                            badgeColor: AppColors.warning,
-                          ),
-                          buildTripCard(
-                            from: '西安',
-                            to: '拉萨',
-                            detail: '3月15日 09:45 · 软卧 32A',
-                            badgeText: '5天',
-                            badgeColor: AppColors.secondaryGreen,
-                          ),
-                          const SizedBox(height: 20),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(height: 4),
+                        CustomPaint(
+                          size: const Size(double.infinity, 2),
+                          painter: DashedLinePainter(color: AppColors.borderDefault),
+                        ),
+                        const SizedBox(height: 4),
+                        Icon(
+                          Icons.directions_train, 
+                          size: 16, 
+                          color: AppColors.textTertiary
+                        ),
+                      ],
                     ),
                   ),
-                ],
+                ),
+                _buildLocationNode(to, isStart: false),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundGrey,
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(12),
+                bottomRight: Radius.circular(12),
               ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.calendar_today, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 6),
+                    Text(
+                      date,
+                      style: const TextStyle(
+                        fontSize: AppFontSizes.body,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  seat,
+                  style: const TextStyle(
+                    fontSize: AppFontSizes.body,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationNode(String city, {required bool isStart}) {
+    return Column(
+      crossAxisAlignment: isStart ? CrossAxisAlignment.start : CrossAxisAlignment.end,
+      children: [
+        Text(
+          city,
+          style: const TextStyle(
+            fontSize: AppFontSizes.title,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          isStart ? '出发地' : '目的地',
+          style: const TextStyle(
+            fontSize: 10,
+            color: AppColors.textTertiary,
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildDiscoveryCard() {
+    return Container(
+      height: 160,
+      decoration: BoxDecoration(
+        borderRadius: AppBorderRadius.extraLarge,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryDarkGreen,
+            AppColors.primaryGreen,
+          ],
+        ),
+        boxShadow: [AppShadows.medium],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            right: -20,
+            bottom: -20,
+            child: Icon(
+              Icons.terrain,
+              size: 140,
+              color: Colors.black.withOpacity(0.1),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    '本周推荐',
+                    style: TextStyle(color: Colors.black, fontSize: 10),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  '秦岭穿越路线',
+                  style: TextStyle(
+                    fontSize: AppFontSizes.title,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '探索未知的自然风光，记录你的足迹',
+                  style: TextStyle(
+                    fontSize: AppFontSizes.body,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -769,3 +914,29 @@ class HomePage extends StatelessWidget {
     );
   }
 }
+
+class DashedLinePainter extends CustomPainter {
+  final Color color;
+  DashedLinePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    double dashWidth = 4;
+    double dashSpace = 4;
+    double startX = 0;
+
+    while (startX < size.width) {
+      canvas.drawLine(Offset(startX, 0), Offset(startX + dashWidth, 0), paint);
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+

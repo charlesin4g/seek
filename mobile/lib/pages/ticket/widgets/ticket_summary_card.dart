@@ -49,18 +49,13 @@ class TicketSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isFlight = ticketKindDisplay == '飞机票';
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF8EC5FC),
-            Color(0xFFE0C3FC),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(32),
+        gradient: isFlight ? AppColors.secondaryGradient : AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: const [AppShadows.medium],
       ),
       child: Column(
@@ -71,7 +66,7 @@ class TicketSummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.25),
+                  color: Colors.black.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -79,7 +74,7 @@ class TicketSummaryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: AppFontSizes.body,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Colors.black,
                   ),
                 ),
               ),
@@ -90,7 +85,7 @@ class TicketSummaryCard extends StatelessWidget {
                   return Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.2),
+                      color: Colors.black.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Text(
@@ -98,7 +93,7 @@ class TicketSummaryCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: AppFontSizes.body,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white,
+                        color: Colors.black,
                       ),
                     ),
                   );
@@ -116,7 +111,7 @@ class TicketSummaryCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: AppFontSizes.titleLarge,
                   fontWeight: FontWeight.w800,
-                  color: Colors.white,
+                  color: Colors.black,
                 ),
               );
             },
@@ -135,7 +130,7 @@ class TicketSummaryCard extends StatelessWidget {
                 '$depart  ·  $arrive',
                 style: const TextStyle(
                   fontSize: AppFontSizes.body,
-                  color: Colors.white70,
+                  color: Colors.black87,
                 ),
               );
             },
@@ -156,14 +151,14 @@ class TicketSummaryCard extends StatelessWidget {
                 width: 56,
                 child: Column(
                   children: [
-                    Icon(_summaryIcon, color: Colors.white.withValues(alpha: 0.9)),
+                    Icon(_summaryIcon, color: Colors.black.withValues(alpha: 0.8)),
                     const SizedBox(height: 8),
                     Text(
                       _durationLabel,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: AppFontSizes.body,
-                        color: Colors.white70,
+                        color: Colors.black87,
                       ),
                     ),
                   ],
@@ -226,7 +221,7 @@ class _TicketTerminalColumn extends StatelessWidget {
               label,
               style: const TextStyle(
                 fontSize: AppFontSizes.body,
-                color: Colors.white70,
+                color: Colors.black54,
               ),
             ),
             const SizedBox(height: 4),
@@ -236,7 +231,7 @@ class _TicketTerminalColumn extends StatelessWidget {
               style: const TextStyle(
                 fontSize: AppFontSizes.subtitle,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
             const SizedBox(height: 6),
@@ -244,7 +239,7 @@ class _TicketTerminalColumn extends StatelessWidget {
               _formatDate(date),
               style: const TextStyle(
                 fontSize: AppFontSizes.body,
-                color: Colors.white70,
+                color: Colors.black87,
               ),
             ),
             Text(
@@ -252,7 +247,7 @@ class _TicketTerminalColumn extends StatelessWidget {
               style: const TextStyle(
                 fontSize: AppFontSizes.title,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: Colors.black,
               ),
             ),
           ],

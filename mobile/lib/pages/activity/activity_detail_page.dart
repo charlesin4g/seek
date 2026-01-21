@@ -282,176 +282,278 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
       offset: const Offset(0, -32),
       child: Padding(
         padding: Responsive.responsivePadding(context).copyWith(top: 0),
-        child: Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.backgroundWhite,
-            borderRadius: AppBorderRadius.extraLarge,
-            boxShadow: const [AppShadows.light],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.backgroundWhite,
+                borderRadius: AppBorderRadius.extraLarge,
+                boxShadow: const [AppShadows.light],
+              ),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _trip.title,
-                          style: const TextStyle(
-                            fontSize: AppFontSizes.titleLarge,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.place, size: 18, color: AppColors.textSecondary),
-                            const SizedBox(width: 4),
-                            Flexible(
-                              child: Text(
-                                _trip.location,
-                                style: const TextStyle(
-                                  fontSize: AppFontSizes.body,
-                                  color: AppColors.textSecondary,
-                                ),
+                            Text(
+                              _trip.title,
+                              style: const TextStyle(
+                                fontSize: AppFontSizes.titleLarge,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary,
                               ),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                const Icon(Icons.place, size: 18, color: AppColors.textSecondary),
+                                const SizedBox(width: 4),
+                                Flexible(
+                                  child: Text(
+                                    _trip.location,
+                                    style: const TextStyle(
+                                      fontSize: AppFontSizes.body,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryLightBlue,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      _trip.dateLabel,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primaryDarkBlue,
                       ),
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryLightGreen,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.primaryGreen.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          _trip.dateLabel,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primaryDarkGreen,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Key Stats Row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildHighlightStat(
+                        icon: Icons.access_time_filled,
+                        label: '耗时',
+                        value: _trip.durationText,
+                        color: AppColors.primaryGreen,
+                      ),
+                      _buildHighlightStat(
+                        icon: Icons.directions_walk,
+                        label: '距离',
+                        value: _trip.distanceText,
+                        color: AppColors.secondaryBlue,
+                      ),
+                      _buildHighlightStat(
+                        icon: Icons.local_fire_department,
+                        label: '热量',
+                        value: '${_trip.calories} kcal',
+                        color: AppColors.accentOrange,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Environment & Elevation Section
+                  const Text(
+                    '环境与海拔',
+                    style: TextStyle(
+                      fontSize: AppFontSizes.subtitle,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildEnvironmentInfo(),
+                  const SizedBox(height: 16),
+                  _buildElevationChart(),
+                  
+                  const SizedBox(height: 24),
+                  Divider(color: AppColors.divider),
+                  const SizedBox(height: 16),
+                  const Text(
+                    '活动详情',
+                    style: TextStyle(
+                      fontSize: AppFontSizes.subtitle,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _trip.description,
+                    style: const TextStyle(
+                      fontSize: AppFontSizes.body,
+                      height: 1.6,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatItem(
-                    icon: Icons.access_time,
-                    label: '耗时',
-                    value: _trip.durationText,
-                  ),
-                  _buildStatItem(
-                    icon: Icons.directions_walk,
-                    label: '距离',
-                    value: _trip.distanceText,
-                  ),
-                  _buildStatItem(
-                    icon: Icons.photo_library_outlined,
-                    label: '照片',
-                    value: _trip.photosText,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildStatItem(
-                    icon: Icons.terrain,
-                    label: '爬升',
-                    value: _formatMeters(_trip.elevationGain),
-                  ),
-                  _buildStatItem(
-                    icon: Icons.terrain,
-                    label: '下降',
-                    value: _formatMeters(_trip.elevationLoss),
-                  ),
-                  _buildStatItem(
-                    icon: Icons.terrain,
-                    label: '最高',
-                    value:  _formatNullableMeters(_trip.maxElevation),
-                  ),
-                ],
-              ),
-              //_buildMetricsModules(),
-              const SizedBox(height: 16),
-              Divider(color: AppColors.divider),
-              const SizedBox(height: 16),
-              const Text(
-                '活动详情',
-                style: TextStyle(
-                  fontSize: AppFontSizes.subtitle,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _trip.description,
-                style: const TextStyle(
-                  fontSize: AppFontSizes.body,
-                  height: 1.4,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
- Widget _buildStatItem({
-  required IconData icon,
-  required String label,
-  required String value,
-}) {
-  return Expanded(                     // 让三列宽度相等
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
-      mainAxisSize: MainAxisSize.min,
+  Widget _buildHighlightStat({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Column(
       children: [
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, size: 24, color: color),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: AppFontSizes.title,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
         Text(
           label,
           style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textTertiary,
+            fontSize: 12,
+            color: AppColors.textSecondary,
           ),
         ),
-        const SizedBox(height: 6),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Icon(icon, size: 18, color: AppColors.primaryDarkBlue),
-            const SizedBox(width: 6),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: AppFontSizes.body,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+      ],
+    );
+  }
+
+  Widget _buildEnvironmentInfo() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundGrey,
+              borderRadius: AppBorderRadius.medium,
             ),
-          ],
+            child: Row(
+              children: [
+                const Icon(Icons.wb_sunny_outlined, color: AppColors.warning),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('天气', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                    Text('晴朗 24°C', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: AppColors.backgroundGrey,
+              borderRadius: AppBorderRadius.medium,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.water_drop_outlined, color: AppColors.secondaryBlue),
+                const SizedBox(width: 8),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    Text('湿度', style: TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+                    Text('45%', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ],
-    ),
-  );
-}
+    );
+  }
+
+  Widget _buildElevationChart() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primaryLightGreen.withValues(alpha: 0.3),
+        borderRadius: AppBorderRadius.large,
+        border: Border.all(color: AppColors.primaryLightGreen),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildElevationItem('累计爬升', _formatMeters(_trip.elevationGain), Icons.arrow_upward, AppColors.error),
+              Container(width: 1, height: 24, color: AppColors.primaryGreen.withValues(alpha: 0.2)),
+              _buildElevationItem('累计下降', _formatMeters(_trip.elevationLoss), Icons.arrow_downward, AppColors.success),
+              Container(width: 1, height: 24, color: AppColors.primaryGreen.withValues(alpha: 0.2)),
+              _buildElevationItem('最高海拔', _formatNullableMeters(_trip.maxElevation), Icons.terrain, AppColors.primaryDarkGreen),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Simple visualization of elevation profile (Mock)
+          SizedBox(
+            height: 40,
+            child: CustomPaint(
+              size: const Size(double.infinity, 40),
+              painter: ElevationProfilePainter(color: AppColors.primaryGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildElevationItem(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
+          ],
+        ),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+      ],
+    );
+  }
 
   String _formatMeters(double meters) {
     return '${meters.toStringAsFixed(0)} m';
@@ -497,7 +599,7 @@ class _ActivityDetailPageState extends State<ActivityDetailPage> {
                   '上传图片',
                   style: TextStyle(
                     fontSize: AppFontSizes.body,
-                    color: AppColors.primaryDarkBlue,
+                    color: AppColors.primaryDarkGreen,
                   ),
                 ),
               ),
@@ -724,4 +826,48 @@ class _FullScreenGalleryPageState extends State<_FullScreenGalleryPage> {
       ),
     );
   }
+}
+
+class ElevationProfilePainter extends CustomPainter {
+  final Color color;
+  ElevationProfilePainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    final path = Path();
+    path.moveTo(0, size.height);
+    
+    // Draw a simple mock mountain profile
+    path.cubicTo(
+      size.width * 0.2, size.height * 0.8, 
+      size.width * 0.3, size.height * 0.4, 
+      size.width * 0.5, size.height * 0.2
+    );
+    path.cubicTo(
+      size.width * 0.7, size.height * 0.1, 
+      size.width * 0.8, size.height * 0.6, 
+      size.width, size.height * 0.5
+    );
+
+    // Fill area
+    final fillPath = Path.from(path);
+    fillPath.lineTo(size.width, size.height);
+    fillPath.lineTo(0, size.height);
+    fillPath.close();
+
+    final fillPaint = Paint()
+      ..color = color.withOpacity(0.2)
+      ..style = PaintingStyle.fill;
+
+    canvas.drawPath(fillPath, fillPaint);
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

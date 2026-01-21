@@ -232,7 +232,7 @@ class _ActivityCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.primaryDarkBlue,
+                  color: AppColors.primaryGreen,
                 ),
               ),
             ),
@@ -320,7 +320,7 @@ class _ActivityStat extends StatelessWidget {
     return Row(
       children: [
         const Icon(Icons.brightness_1, size: 0), // layout placeholder
-        Icon(icon, size: 18, color: AppColors.primaryDarkBlue),
+        Icon(icon, size: 18, color: AppColors.primaryGreen),
         const SizedBox(width: 6),
         Text(
           label,

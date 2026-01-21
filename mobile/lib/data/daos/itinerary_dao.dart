@@ -1,6 +1,7 @@
 import 'package:floor/floor.dart';
 import 'package:mobile/data/entities/itinerary.dart';
 
+
 @dao
 abstract class ItineraryDao {
   // 获取所有行程

@@ -1,7 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
-import '../../models/gear.dart';
+import 'package:mobile/models/gear.dart';
 import '../../config/app_colors.dart';
 import '../../widgets/section_card.dart';
 import '../../widgets/form_field.dart';
